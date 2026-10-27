@@ -15,17 +15,19 @@ app/       Expo SDK 58 + React Native + TypeScript strict, Expo Router
   src/api/          client.ts (fetch + refresh JWT automatique), hooks TanStack Query par ressource
   src/stores/       Zustand (authStore : statut, tokens)
   src/lib/          tokenStorage(.web).ts (SecureStore / localStorage), dates.ts (ISO <-> JJ/MM/AAAA),
-                    horizons.ts, params.ts (useNumberParam), navigation.ts (goBack), numbers.ts
+                    horizons.ts, params.ts (useNumberParam), navigation.ts (goBack), numbers.ts,
+                    calendar.ts (semaine lundi→dimanche, géométrie des barres de la frise)
   src/theme/        tokens couleurs clair/sombre, espacements, useTheme / useIsWide
   src/components/   composants partagés : Screen, Header, Section, Button, IconButton, TextField, DateField,
                     ChipSelect, Dialog/ConfirmDialog, States, ProgressBar, Badge, TaskRow, QuickAddTask,
-                    GoalPicker, GoalTree, GoalForm, DomainForm, AppTabBar
+                    GoalPicker, GoalTree, GoalForm, DomainForm, MoveTaskDialog, Timeline, AppTabBar
   src/i18n/fr.ts    tous les textes de l'interface
 ```
 
 ### Authentification
 - `POST /api/auth/register/` → `{user, access, refresh}` ; `POST /api/auth/token/` (email, password) ; `POST /api/auth/token/refresh/` (rotation + blacklist) ; `POST /api/auth/logout/` (blacklist du refresh) ; `GET/PATCH /api/auth/me/`.
-- Frontend : l'access token reste en mémoire, seul le refresh token est persisté. `apiRequest()` rafraîchit une fois sur 401 puis déconnecte si le refresh est rejeté.
+- Frontend : l'access token reste en mémoire, seul le refresh token est persisté. `apiRequest()` rafraîchit une fois sur 401 puis déconnecte si le refresh est rejeté (400/401 uniquement ; une panne réseau ou serveur garde la session).
+- `accounts.serializers.SafeTokenRefreshSerializer` (réglage `TOKEN_REFRESH_SERIALIZER`) : renvoie 401 au lieu d'une 500 quand l'utilisateur du token a été supprimé.
 - Garde de navigation : effet dans `src/app/_layout.tsx` (`useSegments` + `router.replace`) selon `authStore.status` ; les layouts `(auth)` et `(main)` ne rendent rien tant que le statut ne leur correspond pas.
 
 ### Modèle de données et règles (app `goals`)
@@ -38,12 +40,18 @@ app/       Expo SDK 58 + React Native + TypeScript strict, Expo Router
 - Les serializers obtiennent l'index via `progress_index(context)`, construit paresseusement une fois par requête, après l'écriture.
 
 ### API métier
-- `/api/domains/`, `/api/goals/` (filtres `domain`, `horizon`, `status`, `parent`, `root=true`), `/api/tasks/` (filtres `goal`, `status`, `planned_date`, `planned_after`, `planned_before`, `domain`) : CRUD.
+- `/api/domains/`, `/api/goals/` (filtres `domain`, `horizon`, `status`, `parent`, `root=true`, `active_from`/`active_to` = chevauchement d'une période), `/api/tasks/` (filtres `goal`, `status`, `planned_date`, `planned_after`, `planned_before`, `unplanned=true`, `domain`) : CRUD.
 - `GET /api/goals/tree/?domain=` : arbre imbriqué avec progression, retard et tâches par nœud.
 - `GET /api/tasks/today/` : `{overdue, today, done}`.
 - Un goal renvoie `progress`, `is_late`, `ancestors`, `children_count`, `task_counts` ; une tâche renvoie `goal_path` (vision → objectif direct) et `domain`.
 - Les FK (`parent`, `domain`, `goal`) n'acceptent que des objets de l'utilisateur (`OwnedPrimaryKeyRelatedField`) → 400 sinon.
 - Frontend : hooks dans `src/api/{domains,goals,tasks}.ts`, clés dans `src/api/keys.ts` ; après toute écriture, `invalidatePlanning()` rafraîchit goals/tree/tasks ; la case à cocher d'une tâche est optimiste (`useToggleTask`).
+
+### Semaine et Timeline
+- Semaine (`(main)/week.tsx`) : semaine dans l'URL (`?start=`, normalisée au lundi). Sur grand écran, 7 colonnes dont la largeur est calculée par `onLayout` (min 210 px, sinon défilement horizontal) ; sur mobile, liste des jours. Déplacement par `MoveTaskDialog` ou flèches ±1 jour (`useMoveTask`, optimiste) ; panneau « À planifier » (`unplanned=true`). Pas de glisser-déposer (dépendances natives, comportement web différent).
+- Timeline (`(main)/timeline.tsx` + `components/Timeline.tsx`) : année dans l'URL (`?year=`), objectifs chargés avec `active_from/active_to`, `View` positionnées en % (pas de lib graphique). Piste mesurée par `onLayout`, min 720 px, défilement horizontal en dessous ; colonne des titres fixe. Barre = teinte du domaine, remplissage = progression, pointillés = en retard, chevrons = recadrée sur l'année.
+- Éviter `flex: 1` pour dimensionner des enfants dans un `ScrollView` horizontal (comportement différent sur le web) : mesurer avec `onLayout`.
+- Pour une plage de dates, utiliser `formatRange` (affiche les années dès qu'une date sort de l'année courante).
 
 ### Navigation responsive
 `src/app/(main)/_layout.tsx` utilise `expo-router/js-tabs` avec une barre personnalisée (`AppTabBar`) :
@@ -84,6 +92,6 @@ npx expo export --platform web   # build web statique dans dist/
 ## Avancement
 - [x] Étape 1 : dépôt, auth JWT, navigation et écrans vides, connexion app ↔ API
 - [x] Étape 2 : Domaines, Objectifs, Tâches + progression (Aujourd'hui, Arbre, Domaine, Détail, édition de tâche)
-- [ ] Étape 3 : Semaine et Timeline
+- [x] Étape 3 : Semaine et Timeline
 - [ ] Étape 4 : Habitudes et Revues guidées
 - [ ] Étape 5 : Statistiques, notifications locales, build APK (EAS) et web

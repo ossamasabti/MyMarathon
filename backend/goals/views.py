@@ -21,6 +21,9 @@ class DomainViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
 
 class GoalFilter(filters.FilterSet):
     root = filters.BooleanFilter(field_name="parent", lookup_expr="isnull")
+    # Goals overlapping [active_from, active_to] (e.g. the year shown on the timeline).
+    active_from = filters.DateFilter(field_name="end_date", lookup_expr="gte")
+    active_to = filters.DateFilter(field_name="start_date", lookup_expr="lte")
 
     class Meta:
         model = Goal
@@ -80,6 +83,7 @@ class TaskFilter(filters.FilterSet):
     domain = filters.NumberFilter(field_name="goal__domain")
     planned_after = filters.DateFilter(field_name="planned_date", lookup_expr="gte")
     planned_before = filters.DateFilter(field_name="planned_date", lookup_expr="lte")
+    unplanned = filters.BooleanFilter(field_name="planned_date", lookup_expr="isnull")
 
     class Meta:
         model = Task

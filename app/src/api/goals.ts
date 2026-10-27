@@ -10,6 +10,9 @@ export interface GoalFilters {
   status?: string;
   parent?: number;
   root?: boolean;
+  /** Goals overlapping [active_from, active_to]. */
+  active_from?: string;
+  active_to?: string;
 }
 
 function clean(filters: GoalFilters): Record<string, string | number | boolean> {

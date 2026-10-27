@@ -12,12 +12,14 @@ interface ScreenProps {
   children: ReactNode;
   /** Wrap content in a ScrollView (default: true). */
   scroll?: boolean;
+  /** Use the full available width (week grid, timeline). */
+  fullWidth?: boolean;
 }
 
-export function Screen({ title, children, scroll = true }: ScreenProps) {
+export function Screen({ title, children, scroll = true, fullWidth = false }: ScreenProps) {
   const theme = useTheme();
   const content = (
-    <View style={styles.content}>
+    <View style={[styles.content, fullWidth && styles.fullWidth]}>
       {title ? <AppText variant="title">{title}</AppText> : null}
       {children}
     </View>
@@ -40,4 +42,5 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.md,
   },
+  fullWidth: { maxWidth: undefined },
 });

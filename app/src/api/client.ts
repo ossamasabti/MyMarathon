@@ -54,9 +54,18 @@ async function rawRequest(path: string, method: Method, body: unknown, token: st
   }
 }
 
+function safeJson(text: string): unknown {
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    // Non-JSON body (e.g. an HTML error page from a 500).
+    return null;
+  }
+}
+
 async function parse<T>(response: Response): Promise<T> {
-  const text = await response.text();
-  const data: unknown = text ? JSON.parse(text) : null;
+  const data = safeJson(await response.text());
   if (!response.ok) {
     const body = (data ?? null) as ApiErrorBody | null;
     throw new ApiError(response.status, body, firstMessage(body));
@@ -76,8 +85,8 @@ async function refreshAccessToken(): Promise<string | null> {
     await setTokens(tokens);
     return tokens.access;
   } catch (error) {
-    // Only a rejected token ends the session; a network failure keeps it.
-    if (error instanceof ApiError && error.status !== 0) await signOut();
+    // Only a rejected token ends the session; network or server failures keep it.
+    if (error instanceof ApiError && (error.status === 400 || error.status === 401)) await signOut();
     return null;
   }
 }

@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
+import { addDays } from '@/lib/dates';
+
 import { apiRequest } from './client';
 import { invalidatePlanning, queryKeys, toQuery } from './keys';
-import type { Task, TaskInput, TaskStatus, TodayTasks } from './types';
+import type { ISODate, Task, TaskInput, TaskStatus, TodayTasks } from './types';
 
 export function useTodayTasks() {
   return useQuery({
@@ -71,6 +73,32 @@ export function useToggleTask() {
     onMutate: async ({ id, done }) => {
       await queryClient.cancelQueries({ queryKey: ['tasks'] });
       applyOptimisticStatus(queryClient, id, done ? 'done' : 'todo');
+    },
+    onSettled: () => invalidatePlanning(queryClient),
+  });
+}
+
+/** Tasks planned on the 7 days starting at `start` (a Monday). */
+export function useWeekTasks(start: ISODate) {
+  return useTasks({ planned_after: start, planned_before: addDays(start, 6) });
+}
+
+/** Open tasks without a planned date. */
+export function useUnplannedTasks() {
+  return useTasks({ unplanned: 'true', status: 'todo' });
+}
+
+/** Change a task's planned day; the task moves column immediately. */
+export function useMoveTask() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, plannedDate }: { id: number; plannedDate: ISODate | null }) =>
+      apiRequest<Task>(`/api/tasks/${id}/`, { method: 'PATCH', body: { planned_date: plannedDate } }),
+    onMutate: async ({ id, plannedDate }) => {
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
+      queryClient.setQueriesData<TaskCache>({ queryKey: ['tasks'] }, (data) =>
+        Array.isArray(data) ? data.map((t) => (t.id === id ? { ...t, planned_date: plannedDate } : t)) : data,
+      );
     },
     onSettled: () => invalidatePlanning(queryClient),
   });

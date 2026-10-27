@@ -21,7 +21,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/States';
 import { TaskRow } from '@/components/TaskRow';
 import { TextField } from '@/components/TextField';
 import { fr } from '@/i18n/fr';
-import { formatDate, todayISO } from '@/lib/dates';
+import { formatRange, todayISO } from '@/lib/dates';
 import { formatDecimal } from '@/lib/numbers';
 import { useNumberParam } from '@/lib/params';
 import { MIN_TOUCH, spacing } from '@/theme/colors';
@@ -120,7 +120,7 @@ function GoalDetail({ goal }: { goal: Goal }) {
             </Pressable>
           ) : null}
         </View>
-        <AppText variant="muted">{fr.dates.range(formatDate(goal.start_date), formatDate(goal.end_date))}</AppText>
+        <AppText variant="muted">{formatRange(goal.start_date, goal.end_date)}</AppText>
         {goal.description ? <AppText>{goal.description}</AppText> : null}
         <ProgressBar value={goal.progress} late={goal.is_late} achieved={achieved} color={domain?.color} />
         {goal.task_counts.total ? (

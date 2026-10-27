@@ -166,3 +166,30 @@ def test_deleting_parent_keeps_children_as_roots(api, user):
 
     assert api.delete(f"/api/goals/{vision.id}/").status_code == 204
     assert Goal.objects.get(pk=annual.pk).parent is None
+
+
+def test_week_range_and_unplanned_filters(api, user, other_user):
+    make_task(user, title="lundi", planned_date=date(2026, 10, 26))
+    make_task(user, title="dimanche", planned_date=date(2026, 11, 1))
+    make_task(user, title="semaine suivante", planned_date=date(2026, 11, 2))
+    make_task(user, title="sans date")
+    make_task(other_user, title="intrus")
+
+    week = api.get("/api/tasks/?planned_after=2026-10-26&planned_before=2026-11-01").json()
+    assert sorted(t["title"] for t in week) == ["dimanche", "lundi"]
+
+    unplanned = api.get("/api/tasks/?unplanned=true&status=todo").json()
+    assert [t["title"] for t in unplanned] == ["sans date"]
+
+
+def test_goals_overlapping_a_period(api, user, other_user):
+    make_goal(user, "vision", date(2025, 1, 1), date(2029, 12, 31), title="pluriannuel")
+    make_goal(user, "annual", date(2026, 1, 1), date(2026, 12, 31), title="2026")
+    make_goal(user, "annual", date(2025, 6, 1), date(2026, 2, 28), title="à cheval")
+    make_goal(user, "annual", date(2027, 1, 1), date(2027, 12, 31), title="2027")
+    make_goal(user, "annual", date(2025, 1, 1), date(2025, 12, 31), title="2025")
+    make_goal(other_user, "annual", date(2026, 1, 1), date(2026, 12, 31), title="intrus")
+
+    goals = api.get("/api/goals/?active_from=2026-01-01&active_to=2026-12-31").json()
+
+    assert sorted(g["title"] for g in goals) == ["2026", "pluriannuel", "à cheval"]

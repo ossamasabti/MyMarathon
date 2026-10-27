@@ -109,3 +109,12 @@ def test_logout_blacklists_refresh_token(client, user):
 
     response = client.post(reverse("token_refresh"), {"refresh": tokens["refresh"]})
     assert response.status_code == 401
+
+
+def test_refresh_for_deleted_user_is_401_not_500(client, user):
+    tokens = obtain_tokens(client)
+    user.delete()
+
+    response = client.post(reverse("token_refresh"), {"refresh": tokens["refresh"]})
+
+    assert response.status_code == 401

@@ -79,3 +79,11 @@ export function defaultRange(horizon: 'vision' | 'annual' | 'quarterly' | 'month
       return [start, endOfMonth(start)];
   }
 }
+
+/** "Du 1 mars au 31 déc." this year; both years shown as soon as either date is in another year. */
+export function formatRange(start: ISODate, end: ISODate): string {
+  const thisYear = new Date().getFullYear();
+  const sameYearAsNow = fromISO(start).getFullYear() === thisYear && fromISO(end).getFullYear() === thisYear;
+  const format = (iso: ISODate) => (sameYearAsNow ? shortFormatter : longFormatter).format(fromISO(iso));
+  return `Du ${format(start)} au ${format(end)}`;
+}

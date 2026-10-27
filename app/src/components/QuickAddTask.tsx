@@ -10,15 +10,23 @@ import { useTheme } from '@/theme/useTheme';
 import { AppText } from './AppText';
 import { Button } from './Button';
 import { GoalPicker } from './GoalPicker';
+import { IconButton } from './IconButton';
 
 interface QuickAddTaskProps {
   /** Fixed goal (detail screen); otherwise the user can pick one. */
   goalId?: number;
   plannedDate?: ISODate | null;
   placeholder?: string;
+  /** Narrow layout (week columns): icon button, no goal picker. */
+  compact?: boolean;
 }
 
-export function QuickAddTask({ goalId, plannedDate = null, placeholder = fr.task.addPlaceholder }: QuickAddTaskProps) {
+export function QuickAddTask({
+  goalId,
+  plannedDate = null,
+  placeholder = fr.task.addPlaceholder,
+  compact = false,
+}: QuickAddTaskProps) {
   const theme = useTheme();
   const save = useSaveTask();
   const [title, setTitle] = useState('');
@@ -53,9 +61,13 @@ export function QuickAddTask({ goalId, plannedDate = null, placeholder = fr.task
             { color: theme.text, backgroundColor: theme.surface, borderColor: theme.border },
           ]}
         />
-        <Button label={fr.common.add} onPress={submit} loading={save.isPending} disabled={!title.trim()} />
+        {compact ? (
+          <IconButton icon="add-circle" label={fr.common.add} onPress={submit} disabled={!title.trim() || save.isPending} />
+        ) : (
+          <Button label={fr.common.add} onPress={submit} loading={save.isPending} disabled={!title.trim()} />
+        )}
       </View>
-      {goalId === undefined ? (
+      {goalId === undefined && !compact ? (
         <GoalPicker label={fr.task.linkGoal} value={pickedGoal} onChange={setPickedGoal} noneLabel={fr.task.noGoal} />
       ) : null}
       {save.isError ? (
@@ -72,6 +84,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
   input: {
     flex: 1,
+    minWidth: 0,
     minHeight: MIN_TOUCH,
     borderWidth: 1,
     borderRadius: radius.md,

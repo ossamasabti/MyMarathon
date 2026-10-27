@@ -1,5 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
+import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useToggleTask } from '@/api/tasks';
@@ -16,10 +17,12 @@ interface TaskRowProps {
   task: Task;
   /** Hide the goal path (e.g. inside the goal's own detail screen). */
   hideGoal?: boolean;
+  /** Extra controls under the task (e.g. "move" buttons in the week view). */
+  footer?: ReactNode;
 }
 
 /** A task with its checkbox and, underneath, the goal it serves. */
-export function TaskRow({ task, hideGoal = false }: TaskRowProps) {
+export function TaskRow({ task, hideGoal = false, footer }: TaskRowProps) {
   const theme = useTheme();
   const toggle = useToggleTask();
   const done = task.status === 'done';
@@ -66,6 +69,7 @@ export function TaskRow({ task, hideGoal = false }: TaskRowProps) {
           <AppText variant="small">{fr.dates.due(formatDate(task.due_date))}</AppText>
         ) : null}
       </Pressable>
+      {footer ? <View style={styles.footer}>{footer}</View> : null}
     </View>
   );
 }
@@ -73,6 +77,7 @@ export function TaskRow({ task, hideGoal = false }: TaskRowProps) {
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'flex-start',
     gap: spacing.xs,
     paddingVertical: spacing.xs,
@@ -84,4 +89,5 @@ const styles = StyleSheet.create({
   title: { flex: 1 },
   goalRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   goalText: { flex: 1 },
+  footer: { width: '100%', flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.xs },
 });

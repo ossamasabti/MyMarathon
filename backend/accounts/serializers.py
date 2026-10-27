@@ -1,6 +1,8 @@
 from django.contrib.auth import password_validation
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User
@@ -44,3 +46,15 @@ class RegisterSerializer(serializers.ModelSerializer):
             "access": str(refresh.access_token),
             "refresh": str(refresh),
         }
+
+
+class SafeTokenRefreshSerializer(TokenRefreshSerializer):
+    """simplejwt raises an uncaught DoesNotExist (500) when the token's user was deleted; answer 401 instead."""
+
+    def validate(self, attrs: dict) -> dict:
+        try:
+            return super().validate(attrs)
+        except User.DoesNotExist as exc:
+            raise AuthenticationFailed(
+                self.error_messages["no_active_account"], "no_active_account"
+            ) from exc
