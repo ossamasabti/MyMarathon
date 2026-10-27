@@ -1,0 +1,64 @@
+import pytest
+from rest_framework.test import APIClient
+
+from .conftest import make_domain, make_goal, make_task
+
+pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture
+def alice_data(user):
+    domain = make_domain(user)
+    goal = make_goal(user, "vision", domain=domain)
+    task = make_task(user, goal)
+    return {"domains": domain, "goals": goal, "tasks": task}
+
+
+@pytest.mark.parametrize("resource", ["domains", "goals", "tasks"])
+def test_anonymous_access_is_refused(resource):
+    assert APIClient().get(f"/api/{resource}/").status_code == 401
+
+
+@pytest.mark.parametrize("resource", ["domains", "goals", "tasks"])
+def test_other_user_cannot_list_or_access(other_api, alice_data, resource):
+    obj = alice_data[resource]
+
+    assert other_api.get(f"/api/{resource}/").json() == []
+    assert other_api.get(f"/api/{resource}/{obj.id}/").status_code == 404
+    assert other_api.patch(f"/api/{resource}/{obj.id}/", {"title": "x", "name": "x"}).status_code == 404
+    assert other_api.delete(f"/api/{resource}/{obj.id}/").status_code == 404
+
+
+def test_other_user_sees_nothing_in_aggregates(other_api, alice_data):
+    assert other_api.get("/api/goals/tree/").json() == []
+    assert other_api.get("/api/tasks/today/").json() == {"overdue": [], "today": [], "done": []}
+
+
+def test_cannot_attach_to_another_users_goal_or_domain(other_api, alice_data):
+    goal, domain = alice_data["goals"], alice_data["domains"]
+
+    as_parent = other_api.post(
+        "/api/goals/",
+        {"title": "x", "horizon": "annual", "start_date": "2026-01-01", "end_date": "2026-12-31", "parent": goal.id},
+    )
+    assert as_parent.status_code == 400
+    assert "parent" in as_parent.json()
+
+    with_domain = other_api.post(
+        "/api/goals/",
+        {"title": "x", "horizon": "vision", "start_date": "2026-01-01", "end_date": "2026-12-31", "domain": domain.id},
+    )
+    assert with_domain.status_code == 400
+    assert "domain" in with_domain.json()
+
+    task = other_api.post("/api/tasks/", {"title": "x", "goal": goal.id})
+    assert task.status_code == 400
+    assert "goal" in task.json()
+
+
+def test_created_objects_belong_to_requester(api, user, other_user):
+    response = api.post("/api/tasks/", {"title": "à moi", "user": other_user.id})
+
+    assert response.status_code == 201
+    assert user.tasks.filter(title="à moi").exists()
+    assert not other_user.tasks.exists()

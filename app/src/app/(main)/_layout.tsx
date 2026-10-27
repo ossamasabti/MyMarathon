@@ -26,7 +26,8 @@ export default function MainLayout() {
       <Tabs.Screen name="review" />
       <Tabs.Screen name="settings" />
       <Tabs.Screen name="more" />
-      <Tabs.Screen name="domains/[id]" />
+      <Tabs.Screen name="domains" />
+      <Tabs.Screen name="tasks" />
     </Tabs>
   );
 }

@@ -6,7 +6,7 @@ import { useTheme } from '@/theme/useTheme';
 interface ButtonProps {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   loading?: boolean;
   disabled?: boolean;
 }
@@ -14,8 +14,13 @@ interface ButtonProps {
 export function Button({ label, onPress, variant = 'primary', loading = false, disabled = false }: ButtonProps) {
   const theme = useTheme();
   const inactive = disabled || loading;
-  const background = variant === 'primary' ? theme.primary : variant === 'secondary' ? theme.surfaceAlt : 'transparent';
-  const foreground = variant === 'primary' ? theme.onPrimary : theme.primary;
+  const background = {
+    primary: theme.primary,
+    secondary: theme.surfaceAlt,
+    ghost: 'transparent',
+    danger: theme.danger,
+  }[variant];
+  const foreground = variant === 'primary' || variant === 'danger' ? theme.onPrimary : theme.primary;
 
   return (
     <Pressable
