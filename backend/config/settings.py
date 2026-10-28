@@ -102,6 +102,9 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# Desktop build only: folder of the exported web app, served by Django next to the API.
+FRONTEND_DIR = env("FRONTEND_DIR", default="")
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {

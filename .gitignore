@@ -15,3 +15,10 @@ backend/staticfiles/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Desktop (.exe) build
+desktop/.venv/
+desktop/build/
+desktop/dist/
+desktop/build.log
+app/dist-desktop/

@@ -79,6 +79,21 @@ Le profil `preview` (`app/eas.json`) produit un APK qui parle au backend de ton 
 
 Le HTTP non chiffré n'est autorisé que pour ce profil de test (`app.config.ts`).
 
+## Version Windows (.exe) à partager
+`MyMarathon.exe` est une application autonome : elle contient le serveur, l'interface web et une base SQLite. Rien à installer, aucun serveur à héberger.
+
+Construire (Windows 64 bits, Python 3.13 et Node.js installés) :
+```powershell
+powershell -ExecutionPolicy Bypass -File desktop/build.ps1
+```
+Le fichier produit est `desktop/dist/MyMarathon.exe` (≈ 35 Mo) : c'est lui qu'on envoie.
+
+À savoir pour les personnes qui le reçoivent :
+- au premier lancement, Windows SmartScreen affiche « Windows a protégé votre ordinateur » (fichier non signé) : **Informations complémentaires → Exécuter quand même** ;
+- chaque personne crée son compte au premier lancement ; les données restent sur son PC, dans `%APPDATA%\MyMarathon` (base, clé secrète, journal `mymarathon.log`), et survivent à une nouvelle version du `.exe` ;
+- pas de synchronisation entre PC ni avec le téléphone ;
+- l'app s'ouvre dans sa propre fenêtre (moteur Edge WebView2, présent sur Windows 10/11) ; fermer la fenêtre arrête l'app. Sans WebView2, elle s'ouvre dans le navigateur.
+
 ## Mise en production (à préparer)
 - Backend : `DEBUG=False`, une vraie `SECRET_KEY`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `DATABASE_URL=postgres://…`, puis `python manage.py migrate`, `python manage.py collectstatic` et `gunicorn config.wsgi` derrière un proxy HTTPS.
 - App : définir l'URL HTTPS de l'API dans le profil `production` de `app/eas.json` (actuellement un emplacement réservé) puis `npx eas-cli build --platform android --profile production` (AAB pour le Play Store).

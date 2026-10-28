@@ -27,6 +27,8 @@ app/       Expo SDK 58 + React Native + TypeScript strict, Expo Router
                     GoalPicker, GoalTree, GoalForm, DomainForm, MoveTaskDialog, Timeline, HabitRow, HabitForm,
                     HabitHistory, DayPicker, StatTile, WeeklyColumns, NotificationsSync, AppTabBar
   src/i18n/fr.ts    tous les textes de l'interface
+desktop/   version Windows autonome (MyMarathon.exe) : launcher.py, MyMarathon.spec (PyInstaller), build.ps1,
+           requirements.txt (backend + waitress, pywebview, pyinstaller ; venv séparé desktop/.venv)
 ```
 
 ### Authentification
@@ -60,6 +62,12 @@ app/       Expo SDK 58 + React Native + TypeScript strict, Expo Router
 - Thème : `prefsStore.theme` (`system|light|dark`) lu par `useColorSchemeName()`.
 - `app.config.ts` (remplace app.json) : HTTP non chiffré autorisé seulement pour `EAS_BUILD_PROFILE=preview`. `eas.json` : `preview` = APK vers `http://192.168.1.31:8000` (IP Wi-Fi du PC), `production` = AAB avec une URL HTTPS à définir.
 - Production backend : réglages de sécurité activés quand `DEBUG=False` (HSTS optionnel via `SECURE_HSTS_SECONDS`), `gunicorn` dans requirements.
+
+### Version bureau (.exe)
+- `desktop/launcher.py` : données dans `%APPDATA%\MyMarathon` (SQLite, `secret_key` générée au premier lancement, `mymarathon.log`), réglages passés par variables d'environnement (`DEBUG=False`, `SECURE_SSL_REDIRECT=False`, `FRONTEND_DIR`…) avant `django.setup()`, `migrate` à chaque lancement, `waitress` sur `127.0.0.1:8765` (port fixe : session et préférences sont dans le localStorage, propre à l'origine ; port libre au hasard si occupé), fenêtre `pywebview` avec `private_mode=False`, repli sur le navigateur.
+- Django sert l'export web quand `FRONTEND_DIR` est défini (`core.views.frontend` : fichier réel sinon `index.html`, pas de sortie du dossier) ; même origine que l'API, donc pas de CORS.
+- L'export bureau se fait avec `EXPO_PUBLIC_API_URL=/` (→ URL d'API vide, appels relatifs) dans `app/dist-desktop`. Le lancer depuis PowerShell (`build.ps1`) : Git Bash convertit `/` en chemin Windows.
+- PyInstaller : les modules chargés par nom (argon2, waitress) sont en `hiddenimports` ; `rest_framework_simplejwt` est aussi copié en `.py` (une migration lit son propre `__file__`). Après ajout d'une dépendance chargée dynamiquement, tester l'inscription dans le `.exe`.
 
 ### API métier
 - `/api/domains/`, `/api/goals/` (filtres `domain`, `horizon`, `status`, `parent`, `root=true`, `active_from`/`active_to` = chevauchement d'une période), `/api/tasks/` (filtres `goal`, `status`, `planned_date`, `planned_after`, `planned_before`, `unplanned=true`, `domain`) : CRUD.
@@ -112,6 +120,7 @@ npx tsc --noEmit            # contrôle de types
 npx expo lint
 npx expo export --platform web   # build web statique dans dist/
 ```
+Version Windows (depuis la racine) : `powershell -ExecutionPolicy Bypass -File desktop/build.ps1` → `desktop/dist/MyMarathon.exe`.
 
 ## Avancement
 - [x] Étape 1 : dépôt, auth JWT, navigation et écrans vides, connexion app ↔ API
@@ -119,3 +128,4 @@ npx expo export --platform web   # build web statique dans dist/
 - [x] Étape 3 : Semaine et Timeline
 - [x] Étape 4 : Habitudes et Revues guidées
 - [x] Étape 5 : Statistiques, notifications locales, configuration EAS (APK) et build web
+- [x] Version Windows autonome (.exe) à partager
