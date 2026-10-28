@@ -19,8 +19,12 @@ export interface ActiveFocusSession {
   pausedAt: number | null;
   /** Total paused time so far. */
   pausedMs: number;
-  /** Set once stopped (or when the timer ran out): the session waits to be saved or discarded. */
+  /** Set once stopped (or when the timer ran out). */
   endedAt: number | null;
+  /** The FocusSession row on the server, created after the first focused minute. */
+  serverId: number | null;
+  /** Focused seconds already saved on the server (added to the task's total). */
+  syncedSeconds: number;
 }
 
 export function focusedMs(session: ActiveFocusSession, now: number): number {
@@ -48,20 +52,37 @@ interface StartOptions {
 
 interface FocusState {
   session: ActiveFocusSession | null;
+  /** Last save to the server failed (offline…): retried automatically. Not persisted. */
+  syncError: boolean;
   start: (options: StartOptions) => void;
   pause: () => void;
   resume: () => void;
   /** Stop now, or at `at` (the exact moment a timer ran out). */
   stop: (at?: number) => void;
   clear: () => void;
+  /** Record a successful save, if `startedAt` still identifies the current session. */
+  markSynced: (startedAt: number, serverId: number, seconds: number) => void;
+  setSyncError: (failed: boolean) => void;
 }
 
 export const useFocusStore = create<FocusState>()(
   persist(
     (set, get) => ({
       session: null,
+      syncError: false,
       start: (options) =>
-        set({ session: { ...options, startedAt: Date.now(), pausedAt: null, pausedMs: 0, endedAt: null } }),
+        set({
+          session: {
+            ...options,
+            startedAt: Date.now(),
+            pausedAt: null,
+            pausedMs: 0,
+            endedAt: null,
+            serverId: null,
+            syncedSeconds: 0,
+          },
+          syncError: false,
+        }),
       pause: () => {
         const { session } = get();
         if (!session || session.pausedAt !== null || session.endedAt !== null) return;
@@ -79,7 +100,13 @@ export const useFocusStore = create<FocusState>()(
         const endedAt = session.pausedAt ?? at ?? Date.now();
         set({ session: { ...session, endedAt, pausedAt: null } });
       },
-      clear: () => set({ session: null }),
+      clear: () => set({ session: null, syncError: false }),
+      markSynced: (startedAt, serverId, seconds) => {
+        const { session } = get();
+        if (!session || session.startedAt !== startedAt) return;
+        set({ session: { ...session, serverId, syncedSeconds: seconds }, syncError: false });
+      },
+      setSyncError: (syncError) => set({ syncError }),
     }),
     {
       name: 'mymarathon.focus',
@@ -94,4 +121,9 @@ export function focusClockMs(session: ActiveFocusSession, now: number): number {
   const length = timerMs(session);
   const focused = focusedMs(session, now);
   return length === null ? focused : Math.max(0, length - focused);
+}
+
+/** Whole focused seconds, as saved on the server. */
+export function focusedSeconds(session: ActiveFocusSession, now: number): number {
+  return Math.floor(focusedMs(session, now) / 1000);
 }

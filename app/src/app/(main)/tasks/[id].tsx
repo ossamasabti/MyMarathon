@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ApiError } from '@/api/client';
-import { useDeleteFocusSession, useFocusSessions } from '@/api/focus';
+import { useDeleteFocusSession, useFocusSessions, useLiveTimeSpent } from '@/api/focus';
 import { useDeleteTask, useSaveTask, useTask } from '@/api/tasks';
 import type { FocusSession, Priority, Task, TaskStatus } from '@/api/types';
 import { AppText } from '@/components/AppText';
@@ -23,6 +23,7 @@ import { fr } from '@/i18n/fr';
 import { addDays, formatDate, toISO, todayISO } from '@/lib/dates';
 import { goBack } from '@/lib/navigation';
 import { useNumberParam } from '@/lib/params';
+import { useFocusStore } from '@/stores/focusStore';
 import { addMinutesToTime, formatDuration, formatTime, formatTimeOfDay, type ClockTime } from '@/lib/time';
 import { MIN_TOUCH, spacing } from '@/theme/colors';
 import { useTheme } from '@/theme/useTheme';
@@ -226,10 +227,13 @@ function FocusHistory({ task }: { task: Task }) {
   const sessions = useFocusSessions({ task: task.id });
   const remove = useDeleteFocusSession();
   const [toDelete, setToDelete] = useState<FocusSession | null>(null);
+  const spent = useLiveTimeSpent(task);
+  // The session in progress is still being saved: it cannot be deleted from here.
+  const runningId = useFocusStore((s) => s.session?.serverId ?? null);
 
   return (
     <Section title={fr.focus.history}>
-      <AppText>{fr.focus.timeSpent(formatDuration(task.time_spent_seconds))}</AppText>
+      <AppText>{fr.focus.timeSpent(formatDuration(spent))}</AppText>
       {sessions.isPending ? (
         <LoadingState />
       ) : sessions.isError ? (
@@ -250,12 +254,18 @@ function FocusHistory({ task }: { task: Task }) {
                 )}
               </AppText>
             </View>
-            <IconButton
-              icon="trash-outline"
-              label={fr.focus.deleteSession}
-              color={theme.danger}
-              onPress={() => setToDelete(session)}
-            />
+            {session.id === runningId ? (
+              <AppText variant="small" color={theme.primary}>
+                {fr.focus.inProgress}
+              </AppText>
+            ) : (
+              <IconButton
+                icon="trash-outline"
+                label={fr.focus.deleteSession}
+                color={theme.danger}
+                onPress={() => setToDelete(session)}
+              />
+            )}
           </View>
         ))
       )}

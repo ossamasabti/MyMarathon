@@ -149,3 +149,28 @@ def test_stats_total_focus_time(api, user):
         user=user, mode="stopwatch", started_at=old_end - timedelta(hours=1), ended_at=old_end, duration_seconds=3600
     )
     assert api.get("/api/stats/").json()["totals"]["focus_seconds_30d"] == 600
+
+
+def test_session_progress_is_saved_minute_by_minute(api, user):
+    """The app creates the session after the first minute, then updates it: the task total follows."""
+    task = make_task(user)
+    started = timezone.now().replace(microsecond=0) - timedelta(minutes=3)
+    created = api.post(
+        "/api/focus-sessions/",
+        {"task": task.id, "mode": "stopwatch", "started_at": started.isoformat(),
+         "ended_at": (started + timedelta(minutes=1)).isoformat(), "duration_seconds": 60},
+        format="json",
+    ).json()
+    assert api.get(f"/api/tasks/{task.id}/").json()["time_spent_seconds"] == 60
+
+    updated = api.patch(
+        f"/api/focus-sessions/{created['id']}/",
+        {"ended_at": (started + timedelta(minutes=2)).isoformat(), "duration_seconds": 120},
+        format="json",
+    )
+    assert updated.status_code == 200
+    assert api.get(f"/api/tasks/{task.id}/").json()["time_spent_seconds"] == 120
+
+    # A later update still respects the elapsed time.
+    too_long = api.patch(f"/api/focus-sessions/{created['id']}/", {"duration_seconds": 600}, format="json")
+    assert too_long.status_code == 400

@@ -33,7 +33,8 @@ export function formatSlot(start: string | null, end: string | null): string | n
 /** Human duration: "45 s", "25 min", "1 h", "1 h 05". */
 export function formatDuration(seconds: number): string {
   if (seconds < 60) return `${Math.round(seconds)} s`;
-  const minutes = Math.round(seconds / 60);
+  // Whole minutes only: a minute counts once it is complete.
+  const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes} min`;
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;

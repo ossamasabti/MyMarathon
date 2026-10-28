@@ -1,8 +1,8 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
-import { ApiError } from '@/api/client';
-import { useSaveFocusSession } from '@/api/focus';
+import { useLiveTimeSpent, useStartFocusOnTask } from '@/api/focus';
 import { useTask, useTodayTasks, useToggleTask } from '@/api/tasks';
 import type { FocusMode, Task } from '@/api/types';
 import { AppText } from '@/components/AppText';
@@ -14,12 +14,14 @@ import { Screen } from '@/components/Screen';
 import { ErrorState, LoadingState } from '@/components/States';
 import { TextField } from '@/components/TextField';
 import { fr } from '@/i18n/fr';
+import { discardFocus, MIN_COUNTED_SECONDS, syncFocus } from '@/lib/focusSync';
 import { useNumberParam } from '@/lib/params';
 import { formatClock, formatDuration, formatTimeOfDay } from '@/lib/time';
 import { useNow } from '@/lib/useNow';
 import {
   focusClockMs,
   focusedMs,
+  focusedSeconds,
   timerMs,
   useFocusStore,
   type ActiveFocusSession,
@@ -40,28 +42,32 @@ export default function FocusScreen() {
   );
 }
 
+/** The task passed as `?task=`, when there is one. */
+function useParamTask() {
+  const taskParam = useNumberParam('task');
+  return { requested: Number.isFinite(taskParam), query: useTask(taskParam) };
+}
+
 // --- Before starting ------------------------------------------------------------
 
 function FocusSetup() {
-  const taskParam = useNumberParam('task');
-  const fromParam = Number.isFinite(taskParam);
-  const paramTask = useTask(taskParam);
-
-  if (fromParam && (paramTask.isPending || paramTask.isError)) {
-    return paramTask.isPending ? (
+  const { requested, query } = useParamTask();
+  if (requested && (query.isPending || query.isError)) {
+    return query.isPending ? (
       <LoadingState />
     ) : (
-      <ErrorState message={paramTask.error.message} onRetry={() => paramTask.refetch()} />
+      <ErrorState message={query.error.message} onRetry={() => query.refetch()} />
     );
   }
   // Remount the form when the task changes so its defaults (timer length) follow.
-  const initial = fromParam ? (paramTask.data ?? null) : null;
+  const initial = requested ? (query.data ?? null) : null;
   return <SetupForm key={initial?.id ?? 'free'} initialTask={initial} />;
 }
 
 function SetupForm({ initialTask }: { initialTask: Task | null }) {
   const theme = useTheme();
-  const start = useFocusStore((s) => s.start);
+  const startFree = useFocusStore((s) => s.start);
+  const startOnTask = useStartFocusOnTask();
   const today = useTodayTasks();
   const [taskId, setTaskId] = useState<number | null>(initialTask?.id ?? null);
   const [mode, setMode] = useState<FocusMode>(initialTask?.estimated_minutes ? 'timer' : 'stopwatch');
@@ -84,12 +90,10 @@ function SetupForm({ initialTask }: { initialTask: Task | null }) {
 
   const begin = () => {
     if (!canStart) return;
-    start({
-      mode,
-      taskId,
-      taskTitle: taskId === null ? null : (choices.get(taskId)?.title ?? null),
-      plannedMinutes: mode === 'timer' ? parsedMinutes : null,
-    });
+    const planned = mode === 'timer' ? parsedMinutes : null;
+    const task = taskId === null ? undefined : choices.get(taskId);
+    if (task) startOnTask(task, mode, planned);
+    else startFree({ mode, taskId: null, taskTitle: null, plannedMinutes: planned });
   };
 
   return (
@@ -124,6 +128,7 @@ function SetupForm({ initialTask }: { initialTask: Task | null }) {
           />
         </>
       ) : null}
+      <AppText variant="small">{fr.focus.autoSaveHint}</AppText>
       <Button label={fr.focus.start} onPress={begin} disabled={!canStart} />
       {Platform.OS === 'web' ? (
         <AppText variant="small" color={theme.textMuted}>
@@ -138,10 +143,13 @@ function SetupForm({ initialTask }: { initialTask: Task | null }) {
 
 function RunningSession({ session }: { session: ActiveFocusSession }) {
   const theme = useTheme();
-  const { pause, resume, stop, clear } = useFocusStore();
+  const queryClient = useQueryClient();
+  const { pause, resume, stop } = useFocusStore();
+  const syncError = useFocusStore((s) => s.syncError);
   const running = session.pausedAt === null && session.endedAt === null;
   const now = useNow(running);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
 
   const clock = formatClock(focusClockMs(session, now));
   const length = timerMs(session);
@@ -181,6 +189,12 @@ function RunningSession({ session }: { session: ActiveFocusSession }) {
         {fr.focus.startedAt(formatTimeOfDay(new Date(session.startedAt)))}
         {session.pausedAt !== null ? ` · ${fr.focus.paused}` : ''}
       </AppText>
+      {session.taskId !== null ? <TaskTotal taskId={session.taskId} /> : null}
+      {syncError ? (
+        <AppText variant="small" color={theme.danger} accessibilityRole="alert">
+          {fr.focus.syncError}
+        </AppText>
+      ) : null}
 
       <View style={styles.actions}>
         {session.pausedAt !== null ? (
@@ -192,62 +206,105 @@ function RunningSession({ session }: { session: ActiveFocusSession }) {
       </View>
       <Button label={fr.focus.discard} variant="ghost" onPress={() => setConfirmDiscard(true)} />
 
+      <SwitchTaskNotice session={session} />
       <FinishDialog session={session} />
       <ConfirmDialog
         visible={confirmDiscard}
         title={fr.focus.discardTitle}
         message={fr.focus.discardMessage}
         confirmLabel={fr.focus.discard}
+        loading={discarding}
         onCancel={() => setConfirmDiscard(false)}
         onConfirm={() => {
-          setConfirmDiscard(false);
-          clear();
+          setDiscarding(true);
+          discardFocus(queryClient)
+            .catch(() => useFocusStore.getState().setSyncError(true))
+            .finally(() => {
+              setDiscarding(false);
+              setConfirmDiscard(false);
+            });
         }}
       />
     </View>
   );
 }
 
+/** "Total sur la tâche", ticking with the session. */
+function TaskTotal({ taskId }: { taskId: number }) {
+  const task = useTask(taskId);
+  if (!task.data) return null;
+  return <LiveTotal task={task.data} />;
+}
+
+function LiveTotal({ task }: { task: Task }) {
+  const seconds = useLiveTimeSpent(task);
+  return <AppText>{fr.focus.taskTotal(formatDuration(seconds))}</AppText>;
+}
+
+/** Opened with `?task=` for another task while a session runs: offer to switch. */
+function SwitchTaskNotice({ session }: { session: ActiveFocusSession }) {
+  const theme = useTheme();
+  const queryClient = useQueryClient();
+  const startOnTask = useStartFocusOnTask();
+  const { requested, query } = useParamTask();
+  const [switching, setSwitching] = useState(false);
+  const target = requested ? query.data : undefined;
+  if (!target || target.id === session.taskId || session.endedAt !== null) return null;
+
+  const switchTask = async () => {
+    setSwitching(true);
+    useFocusStore.getState().stop();
+    await syncFocus(queryClient);
+    setSwitching(false);
+    if (useFocusStore.getState().syncError) return;
+    startOnTask(target);
+  };
+
+  return (
+    <View style={[styles.notice, { borderColor: theme.border, backgroundColor: theme.surfaceAlt }]}>
+      <AppText>{fr.focus.switchNotice(target.title)}</AppText>
+      <Button label={fr.focus.switchTo(target.title)} onPress={() => void switchTask()} loading={switching} />
+    </View>
+  );
+}
+
 function FinishDialog({ session }: { session: ActiveFocusSession }) {
   const theme = useTheme();
+  const queryClient = useQueryClient();
   const clear = useFocusStore((s) => s.clear);
-  const save = useSaveFocusSession();
+  const syncError = useFocusStore((s) => s.syncError);
   const toggle = useToggleTask();
   const [markDone, setMarkDone] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   if (session.endedAt === null) return null;
-  const endedAt = session.endedAt;
-  const seconds = Math.round(focusedMs(session, endedAt) / 1000);
+  const seconds = focusedSeconds(session, session.endedAt);
+  const counted = seconds >= MIN_COUNTED_SECONDS;
+  const saved = !counted || (session.syncedSeconds ?? 0) === seconds;
   const timerDone = session.mode === 'timer' && seconds >= (session.plannedMinutes ?? 0) * 60;
-  const apiError = save.error instanceof ApiError ? save.error : null;
-  const errors = apiError
-    ? Object.values(apiError.body ?? {}).flatMap((v) => (Array.isArray(v) ? v.map(String) : []))
-    : [];
 
-  const submit = () =>
-    save.mutate(
-      {
-        task: session.taskId,
-        mode: session.mode,
-        started_at: new Date(session.startedAt).toISOString(),
-        ended_at: new Date(endedAt).toISOString(),
-        duration_seconds: seconds,
-        planned_minutes: session.plannedMinutes,
-      },
-      {
-        onSuccess: () => {
-          if (markDone && session.taskId !== null) toggle.mutate({ id: session.taskId, done: true });
-          clear();
-        },
-      },
-    );
+  const close = () => {
+    if (markDone && session.taskId !== null) toggle.mutate({ id: session.taskId, done: true });
+    clear();
+  };
+  const retry = () => {
+    setRetrying(true);
+    void syncFocus(queryClient).finally(() => setRetrying(false));
+  };
 
   return (
     <Dialog visible title={timerDone ? fr.focus.timeUp : fr.focus.finished} onClose={() => undefined}>
-      <AppText>{fr.focus.summary(formatDuration(seconds))}</AppText>
-      <AppText variant="small">
-        {fr.focus.span(formatTimeOfDay(new Date(session.startedAt)), formatTimeOfDay(new Date(endedAt)))}
+      <AppText>
+        {!counted
+          ? fr.focus.tooShort
+          : session.taskTitle
+            ? fr.focus.addedToTask(formatDuration(seconds), session.taskTitle)
+            : fr.focus.summary(formatDuration(seconds))}
       </AppText>
+      <AppText variant="small">
+        {fr.focus.span(formatTimeOfDay(new Date(session.startedAt)), formatTimeOfDay(new Date(session.endedAt)))}
+      </AppText>
+      {counted && session.taskId !== null ? <TaskTotal taskId={session.taskId} /> : null}
       {session.taskId !== null ? (
         <ChipSelect
           label={session.taskTitle ?? fr.focus.task}
@@ -259,15 +316,14 @@ function FinishDialog({ session }: { session: ActiveFocusSession }) {
           onChange={(v) => setMarkDone(v === 'done')}
         />
       ) : null}
-      {seconds < 1 ? <AppText color={theme.danger}>{fr.focus.tooShort}</AppText> : null}
-      {errors.length || (save.isError && !apiError) ? (
+      {syncError && !saved ? (
         <AppText color={theme.danger} accessibilityRole="alert">
-          {errors.length ? errors.join(' ') : save.error?.message}
+          {fr.focus.syncError}
         </AppText>
       ) : null}
       <View style={styles.actions}>
-        <Button label={fr.focus.dontSave} variant="secondary" onPress={clear} />
-        <Button label={fr.focus.save} onPress={submit} loading={save.isPending} disabled={seconds < 1} />
+        {syncError && !saved ? <Button label={fr.common.retry} variant="secondary" onPress={retry} loading={retrying} /> : null}
+        <Button label={fr.common.close} onPress={close} loading={!saved && !syncError} disabled={!saved} />
       </View>
     </Dialog>
   );
@@ -287,4 +343,12 @@ const styles = StyleSheet.create({
   },
   fill: { height: '100%', borderRadius: radius.sm },
   actions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.sm },
+  notice: {
+    width: '100%',
+    maxWidth: 520,
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+  },
 });

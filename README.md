@@ -58,7 +58,8 @@ npx expo export --platform web
 - Dans le détail d'une tâche : **heure de début / fin** (créneau sur la date planifiée) et bouton **Se concentrer sur cette tâche** ; l'écran **Concentration** (menu) permet aussi une session libre.
 - **Chrono** (le temps monte) ou **minuteur** (25, 45, 60 min ou durée libre). Pause, reprise, fin ; la session continue si tu changes d'écran ou recharges la page.
 - Fin du minuteur : signal sonore sur PC / web (fenêtre ouverte), notification et vibration sur téléphone.
-- Chaque session enregistrée s'ajoute au **temps passé** de la tâche et à la tuile « Concentration (30 jours) » des statistiques.
+- Bouton ▶ sur chaque tâche : lance le chrono sur cette tâche (elle passe « En cours »).
+- **Chaque minute** de concentration est ajoutée automatiquement au **temps passé** de la tâche (affiché sur la ligne de la tâche, cumulé sur toutes les sessions) et à la tuile « Concentration (30 jours) » ; si l'app se ferme, les minutes déjà comptées restent. Une session de moins d'une minute n'est pas comptée ; « Abandonner » retire les minutes de la session.
 
 ## Rappels (notifications locales)
 Dans **Réglages → Rappels** (application mobile uniquement) :
