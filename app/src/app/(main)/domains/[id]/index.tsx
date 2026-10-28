@@ -17,6 +17,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/States';
 import { TaskRow } from '@/components/TaskRow';
 import { fr } from '@/i18n/fr';
 import { useNumberParam } from '@/lib/params';
+import { useDomainColor } from '@/theme/domainColors';
 import { useTheme } from '@/theme/useTheme';
 
 export default function DomainScreen() {
@@ -43,6 +44,7 @@ export default function DomainScreen() {
 
 function DomainDetail({ domain }: { domain: Domain }) {
   const theme = useTheme();
+  const display = useDomainColor();
   const tree = useGoalTree(domain.id);
   const tasks = useTasks({ domain: domain.id });
   const remove = useDeleteDomain();
@@ -64,7 +66,7 @@ function DomainDetail({ domain }: { domain: Domain }) {
           </>
         }
       />
-      <View style={[styles.stripe, { backgroundColor: domain.color }]} />
+      <View style={[styles.stripe, { backgroundColor: display(domain.color) }]} />
 
       <Section
         title={fr.domain.goals}

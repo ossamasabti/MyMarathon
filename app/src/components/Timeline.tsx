@@ -9,6 +9,7 @@ import { barGeometry, monthTicks, todayPct, yearBounds } from '@/lib/calendar';
 import { formatRange } from '@/lib/dates';
 import { HORIZONS } from '@/lib/horizons';
 import { MIN_TOUCH, radius, spacing } from '@/theme/colors';
+import { useDomainColor } from '@/theme/domainColors';
 import { useIsWide, useTheme } from '@/theme/useTheme';
 
 import { AppText } from './AppText';
@@ -145,8 +146,9 @@ interface GoalBarProps {
   yearEnd: string;
 }
 
-function GoalBar({ goal, color, yearStart, yearEnd }: GoalBarProps) {
+function GoalBar({ goal, color: storedColor, yearStart, yearEnd }: GoalBarProps) {
   const theme = useTheme();
+  const color = useDomainColor()(storedColor);
   const geometry = barGeometry(goal.start_date, goal.end_date, yearStart, yearEnd);
   const percent = Math.round(goal.progress * 100);
   const achieved = goal.status === 'achieved';

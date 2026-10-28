@@ -193,3 +193,13 @@ def test_goals_overlapping_a_period(api, user, other_user):
     goals = api.get("/api/goals/?active_from=2026-01-01&active_to=2026-12-31").json()
 
     assert sorted(g["title"] for g in goals) == ["2026", "pluriannuel", "à cheval"]
+
+
+def test_due_date_range_filter(api, user):
+    make_task(user, title="dans la fenêtre", due_date=date(2026, 11, 3))
+    make_task(user, title="trop tard", due_date=date(2026, 11, 20))
+    make_task(user, title="sans échéance")
+
+    tasks = api.get("/api/tasks/?due_after=2026-10-28&due_before=2026-11-11").json()
+
+    assert [t["title"] for t in tasks] == ["dans la fenêtre"]

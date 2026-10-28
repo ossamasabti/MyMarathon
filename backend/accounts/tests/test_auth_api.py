@@ -50,7 +50,7 @@ def test_register_rejects_duplicate_email(client, user):
     response = client.post(reverse("register"), {"email": "ALICE@example.com", "password": PASSWORD})
 
     assert response.status_code == 400
-    assert "email" in response.json()
+    assert response.json()["email"] == ["Un compte existe déjà avec cette adresse e-mail."]
 
 
 def test_register_rejects_weak_password(client):

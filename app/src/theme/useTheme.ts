@@ -1,9 +1,15 @@
 import { useColorScheme, useWindowDimensions } from 'react-native';
 
+import { usePrefsStore } from '@/stores/prefsStore';
+
 import { palette, WIDE_BREAKPOINT, type ColorScheme, type ThemeColors } from './colors';
 
+/** The scheme in use: the user's choice in Réglages, or the system's. */
 export function useColorSchemeName(): ColorScheme {
-  return useColorScheme() === 'dark' ? 'dark' : 'light';
+  const system = useColorScheme();
+  const preference = usePrefsStore((s) => s.theme);
+  if (preference !== 'system') return preference;
+  return system === 'dark' ? 'dark' : 'light';
 }
 
 export function useTheme(): ThemeColors {

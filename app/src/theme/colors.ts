@@ -54,3 +54,9 @@ export const MIN_TOUCH = 44;
 export const WIDE_BREAKPOINT = 768;
 
 export const MAX_CONTENT_WIDTH = 960;
+
+/** Single-series column charts: past periods = lighter step, current period = accent (same blue ramp). */
+export const chartColors = {
+  light: { past: '#86B6EF', current: '#2A78D6', grid: '#E4E8EE' },
+  dark: { past: '#1C5CAB', current: '#3987E5', grid: '#2A313C' },
+} as const;

@@ -7,7 +7,7 @@ class Domain(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="domains")
     name = models.CharField("nom", max_length=60)
     icon = models.CharField("icône", max_length=40, blank=True)
-    color = models.CharField("couleur", max_length=7, default="#1F5FD1")
+    color = models.CharField("couleur", max_length=7, default="#2A78D6")
     order = models.PositiveIntegerField("ordre", default=0)
 
     class Meta:

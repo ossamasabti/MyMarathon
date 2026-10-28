@@ -10,20 +10,22 @@ backend/   Django 5.2 + DRF, API REST sous /api/, JWT (simplejwt), argon2
   core/      briques partagées : OwnedQuerysetMixin (filtrage par utilisateur), health check
   accounts/  User personnalisé (identifiant = e-mail), inscription, profil, logout
   goals/     Domain, Goal, Task, Habit, HabitLog, Review : models, rules.py (hiérarchie, progression, retard),
-             habits.py (échéance, série, taux), periods.py, review_summary.py, serializers, viewsets, tests/
+             habits.py (échéance, série, taux), periods.py, review_summary.py, stats.py, serializers, viewsets, tests/
 app/       Expo SDK 58 + React Native + TypeScript strict, Expo Router
   src/app/          routes (fichier = écran). (auth) = connexion/inscription, (main) = app connectée
   src/api/          client.ts (fetch + refresh JWT automatique), hooks TanStack Query par ressource
-  src/stores/       Zustand (authStore : statut, tokens)
+  src/stores/       Zustand : authStore (statut, tokens), prefsStore (thème, rappels ; persisté dans AsyncStorage)
   src/lib/          tokenStorage(.web).ts (SecureStore / localStorage), dates.ts (ISO <-> JJ/MM/AAAA),
                     horizons.ts, params.ts (useNumberParam), navigation.ts (goBack), numbers.ts,
                     calendar.ts (semaine lundi→dimanche, géométrie de la frise, périodes de revue),
-                    reviewQuestions.ts (questions par type de revue, clés stables)
-  src/theme/        tokens couleurs clair/sombre, espacements, useTheme / useIsWide
+                    reviewQuestions.ts (questions par type de revue, clés stables), reminders.ts (planification
+                    pure des rappels), notifications(.web).ts (expo-notifications / sans effet sur le web)
+  src/theme/        tokens couleurs clair/sombre, espacements, chartColors, useTheme / useIsWide,
+                    domainColors.ts (palette catégorielle validée des domaines + variante sombre)
   src/components/   composants partagés : Screen, Header, Section, Button, IconButton, TextField, DateField,
                     ChipSelect, Dialog/ConfirmDialog, States, ProgressBar, Badge, TaskRow, QuickAddTask,
                     GoalPicker, GoalTree, GoalForm, DomainForm, MoveTaskDialog, Timeline, HabitRow, HabitForm,
-                    HabitHistory, DayPicker, AppTabBar
+                    HabitHistory, DayPicker, StatTile, WeeklyColumns, NotificationsSync, AppTabBar
   src/i18n/fr.ts    tous les textes de l'interface
 ```
 
@@ -50,10 +52,20 @@ app/       Expo SDK 58 + React Native + TypeScript strict, Expo Router
 - `review_summary.build_summary` : tâches terminées, objectifs qui ont avancé (via eux-mêmes ou un descendant), objectifs atteints dans la période, taux des habitudes, objectifs en retard.
 - Front : `/review` (hub : type, période, historique) → `/review/[type]/[start]` (résumé + questions de `reviewQuestions.ts`, `start` normalisé au début de période) ; `/habits/[id]` (historique 4 semaines cochable pour rattraper, édition, suppression).
 
+### Statistiques, rappels, réglages, builds
+- `GET /api/stats/?weeks=12` (`goals/stats.py`) : progression moyenne des objectifs racines de chaque domaine, tâches terminées par semaine (semaines vides à 0), objectifs en retard (réel vs attendu), totaux sur 30 jours.
+- Graphiques en `View` (pas de lib) selon le skill dataviz : barres ≤ 24 px, bout arrondi 4 px côté données, valeurs en couleur de texte, une seule série = pas de légende, lecture au survol/appui + tableau « Voir les données ».
+- Couleurs de domaine : la palette `DOMAIN_PALETTE` a été validée (`validate_palette.js`, clair et sombre) ; l'API stocke la teinte claire, l'affichage passe par `useDomainColor()` / `DomainDot` / `ProgressBar`. Ne pas ajouter de couleur hors palette. Migration `0003_domain_palette` = conversion des anciennes couleurs.
+- Rappels locaux : `NotificationsSync` (monté dans `(main)/_layout.tsx`) recalcule au démarrage, au retour au premier plan et quand tâches/objectifs changent. Échéances à 9 h (tâches à J, objectifs à J−3, 14 jours, max 50) ; revue le dimanche 18 h (weekday expo : 1 = dimanche). Rien sur le web. Annulés à la déconnexion.
+- Thème : `prefsStore.theme` (`system|light|dark`) lu par `useColorSchemeName()`.
+- `app.config.ts` (remplace app.json) : HTTP non chiffré autorisé seulement pour `EAS_BUILD_PROFILE=preview`. `eas.json` : `preview` = APK vers `http://192.168.1.31:8000` (IP Wi-Fi du PC), `production` = AAB avec une URL HTTPS à définir.
+- Production backend : réglages de sécurité activés quand `DEBUG=False` (HSTS optionnel via `SECURE_HSTS_SECONDS`), `gunicorn` dans requirements.
+
 ### API métier
 - `/api/domains/`, `/api/goals/` (filtres `domain`, `horizon`, `status`, `parent`, `root=true`, `active_from`/`active_to` = chevauchement d'une période), `/api/tasks/` (filtres `goal`, `status`, `planned_date`, `planned_after`, `planned_before`, `unplanned=true`, `domain`) : CRUD.
 - `GET /api/goals/tree/?domain=` : arbre imbriqué avec progression, retard et tâches par nœud.
 - `GET /api/tasks/today/` : `{overdue, today, done}`.
+- Tâches : filtres `due_after` / `due_before` (rappels).
 - `/api/habits/` (filtre `goal`) + `GET today/`, `POST {id}/check/` `{date?, done}` (date future refusée), `GET {id}/logs/?from=&to=` ; `/api/reviews/` (filtres `type`, `period_start`) + `GET summary/?type=&period_start=`.
 - Un goal renvoie `progress`, `is_late`, `ancestors`, `children_count`, `task_counts` ; une tâche renvoie `goal_path` (vision → objectif direct) et `domain`.
 - Les FK (`parent`, `domain`, `goal`) n'acceptent que des objets de l'utilisateur (`OwnedPrimaryKeyRelatedField`) → 400 sinon.
@@ -94,7 +106,7 @@ Backend (depuis `backend/`, venv dans `backend/.venv`) :
 App (depuis `app/`) :
 ```
 npm install
-npx expo start --web        # web sur http://localhost:8081 (127.0.0.1:8081 aussi autorisé en CORS : session séparée, pratique pour tester avec un autre compte)
+npx expo start --web        # web sur http://localhost:8081 (127.0.0.1:8081 et 192.168.1.31:8081 aussi autorisés en CORS local : sessions séparées, pratiques pour tester avec un compte jetable sans toucher à celui de l'utilisateur)
 npx expo start              # QR code pour Expo Go
 npx tsc --noEmit            # contrôle de types
 npx expo lint
@@ -106,4 +118,4 @@ npx expo export --platform web   # build web statique dans dist/
 - [x] Étape 2 : Domaines, Objectifs, Tâches + progression (Aujourd'hui, Arbre, Domaine, Détail, édition de tâche)
 - [x] Étape 3 : Semaine et Timeline
 - [x] Étape 4 : Habitudes et Revues guidées
-- [ ] Étape 5 : Statistiques, notifications locales, build APK (EAS) et web
+- [x] Étape 5 : Statistiques, notifications locales, configuration EAS (APK) et build web

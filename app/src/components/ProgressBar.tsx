@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { fr } from '@/i18n/fr';
 import { spacing } from '@/theme/colors';
+import { useDomainColor } from '@/theme/domainColors';
 import { useTheme } from '@/theme/useTheme';
 
 import { AppText } from './AppText';
@@ -19,8 +20,9 @@ interface ProgressBarProps {
 /** Progress shown as distance covered on a course; a reached goal crosses the finish line. */
 export function ProgressBar({ value, late = false, achieved = false, color, compact = false }: ProgressBarProps) {
   const theme = useTheme();
+  const display = useDomainColor();
   const percent = Math.round(Math.max(0, Math.min(1, value)) * 100);
-  const fill = achieved ? theme.success : late ? theme.danger : (color ?? theme.primary);
+  const fill = achieved ? theme.success : late ? theme.danger : color ? display(color) : theme.primary;
   const caption = achieved ? `\u{1F3C1} ${fr.progress.finished}` : fr.progress.distance(percent);
 
   return (

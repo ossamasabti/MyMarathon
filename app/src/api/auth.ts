@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { cancelAllReminders } from '@/lib/notifications';
 import { useAuthStore } from '@/stores/authStore';
 
 import { apiRequest } from './client';
@@ -20,6 +21,15 @@ export function useMe() {
   return useQuery({
     queryKey: meQueryKey,
     queryFn: () => apiRequest<User>('/api/auth/me/'),
+  });
+}
+
+export function useUpdateMe() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Pick<User, 'display_name'>) =>
+      apiRequest<User>('/api/auth/me/', { method: 'PATCH', body: input }),
+    onSuccess: (user) => queryClient.setQueryData(meQueryKey, user),
   });
 }
 
@@ -58,6 +68,8 @@ export function useLogout() {
       }
     },
     onSettled: async () => {
+      // Reminders belong to the account that scheduled them.
+      await cancelAllReminders().catch(() => undefined);
       await useAuthStore.getState().signOut();
       queryClient.clear();
     },

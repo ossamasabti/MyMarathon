@@ -12,10 +12,12 @@ import { Section } from '@/components/Section';
 import { EmptyState, ErrorState, LoadingState } from '@/components/States';
 import { fr } from '@/i18n/fr';
 import { MIN_TOUCH, radius, spacing } from '@/theme/colors';
+import { useDomainColor } from '@/theme/domainColors';
 import { useTheme } from '@/theme/useTheme';
 
 export default function GoalTreeScreen() {
   const theme = useTheme();
+  const display = useDomainColor();
   const tree = useGoalTree();
   const domains = useDomains();
 
@@ -30,7 +32,7 @@ export default function GoalTreeScreen() {
               onPress={() => router.push({ pathname: '/domains/[id]', params: { id: String(domain.id) } })}
               style={({ pressed }) => [
                 styles.chip,
-                { borderColor: domain.color, backgroundColor: theme.surface },
+                { borderColor: display(domain.color), backgroundColor: theme.surface },
                 pressed && { opacity: 0.7 },
               ]}>
               <DomainDot color={domain.color} />

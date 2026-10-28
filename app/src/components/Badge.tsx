@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import type { Horizon } from '@/api/types';
 import { fr } from '@/i18n/fr';
 import { radius, spacing } from '@/theme/colors';
+import { useDomainColor } from '@/theme/domainColors';
 import { useTheme } from '@/theme/useTheme';
 
 import { AppText } from './AppText';
@@ -24,7 +25,8 @@ export function HorizonBadge({ horizon }: { horizon: Horizon }) {
 
 /** A small colored dot identifying a domain. */
 export function DomainDot({ color, size = 10 }: { color: string; size?: number }) {
-  return <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: color }} />;
+  const display = useDomainColor();
+  return <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: display(color) }} />;
 }
 
 const styles = StyleSheet.create({

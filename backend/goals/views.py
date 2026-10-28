@@ -2,7 +2,7 @@ from django.db.models import Case, IntegerField, Q, Value, When
 from django.utils import timezone
 from django_filters import rest_framework as filters
 from rest_framework import serializers, viewsets
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -13,6 +13,7 @@ from .models import Domain, Goal, Habit, HabitLog, Priority, Review, ReviewType,
 from .periods import period_bounds
 from .review_summary import build_summary
 from .rules import is_late
+from .stats import build_stats
 from .serializers import (
     DomainSerializer,
     GoalSerializer,
@@ -97,6 +98,8 @@ class TaskFilter(filters.FilterSet):
     planned_after = filters.DateFilter(field_name="planned_date", lookup_expr="gte")
     planned_before = filters.DateFilter(field_name="planned_date", lookup_expr="lte")
     unplanned = filters.BooleanFilter(field_name="planned_date", lookup_expr="isnull")
+    due_after = filters.DateFilter(field_name="due_date", lookup_expr="gte")
+    due_before = filters.DateFilter(field_name="due_date", lookup_expr="lte")
 
     class Meta:
         model = Task
@@ -191,3 +194,15 @@ class ReviewViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
         day = params.validated_data.get("period_start") or timezone.localdate()
         start, end = period_bounds(review_type, day)
         return Response(build_summary(request.user, start, end, timezone.localdate()))
+
+
+class StatsQuerySerializer(serializers.Serializer):
+    weeks = serializers.IntegerField(min_value=1, max_value=52, default=12)
+
+
+@api_view(["GET"])
+def stats(request: Request) -> Response:
+    """Statistics of the requesting user (progress by domain, weekly tasks, late goals)."""
+    params = StatsQuerySerializer(data=request.query_params)
+    params.is_valid(raise_exception=True)
+    return Response(build_stats(request.user, timezone.localdate(), params.validated_data["weeks"]))

@@ -43,6 +43,7 @@ L'app s'ouvre sur http://localhost:8081 (origine autorisée par défaut dans `CO
 4. `cd app && npx expo start`, puis scanne le QR code avec Expo Go (Android) ou l'appareil photo (iOS).
 
 Émulateur Android : utilise `http://10.0.2.2:8000`.
+Après une mise à jour du dépôt, pense à `python manage.py migrate` (nouvelles tables).
 Si le pare-feu Windows bloque le port 8000, autorise Python sur les réseaux privés.
 
 ## Contrôles qualité de l'app
@@ -52,3 +53,32 @@ npx tsc --noEmit
 npx expo lint
 npx expo export --platform web
 ```
+
+## Rappels (notifications locales)
+Dans **Réglages → Rappels** (application mobile uniquement) :
+- **Rappels d'échéance** : à 9 h le jour d'échéance d'une tâche, et 3 jours avant la fin d'un objectif actif ;
+- **Rappel de revue** : le dimanche à 18 h.
+
+Les rappels sont recalculés à chaque ouverture de l'application. Ils fonctionnent dans Expo Go et dans l'APK ; ils n'existent pas sur le web.
+
+## Build web
+```bash
+cd app
+# L'adresse de l'API est figée au moment de l'export :
+EXPO_PUBLIC_API_URL=https://api.mondomaine.fr npx expo export --platform web
+npx serve dist --single      # test local du build (application d'une seule page)
+```
+Le dossier `app/dist/` se dépose sur n'importe quel hébergement statique ; toutes les routes doivent renvoyer `index.html`. Ajoute l'origine du site à `CORS_ALLOWED_ORIGINS` côté backend.
+
+## APK Android de test (EAS)
+Le profil `preview` (`app/eas.json`) produit un APK qui parle au backend de ton PC sur le Wi-Fi (`http://192.168.1.31:8000` ; modifie l'adresse si l'IP du PC change) :
+1. `cd app && npx eas-cli login` (compte Expo gratuit), puis `npx eas-cli init` la première fois ;
+2. `npx eas-cli build --platform android --profile preview` : le build se fait dans le cloud Expo et donne un lien de téléchargement de l'APK ;
+3. sur le PC : `ALLOWED_HOSTS` contient l'IP du PC (`backend/.env`), le backend tourne avec `runserver 0.0.0.0:8000`, et le pare-feu Windows autorise Python sur les réseaux privés ;
+4. sur le téléphone (même Wi-Fi) : installer l'APK (autoriser les sources inconnues).
+
+Le HTTP non chiffré n'est autorisé que pour ce profil de test (`app.config.ts`).
+
+## Mise en production (à préparer)
+- Backend : `DEBUG=False`, une vraie `SECRET_KEY`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `DATABASE_URL=postgres://…`, puis `python manage.py migrate`, `python manage.py collectstatic` et `gunicorn config.wsgi` derrière un proxy HTTPS.
+- App : définir l'URL HTTPS de l'API dans le profil `production` de `app/eas.json` (actuellement un emplacement réservé) puis `npx eas-cli build --platform android --profile production` (AAB pour le Play Store).

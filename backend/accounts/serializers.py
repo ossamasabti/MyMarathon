@@ -16,6 +16,9 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class RegisterSerializer(serializers.ModelSerializer):
+    # Declared explicitly so that our case-insensitive check (and message) replaces the model's
+    # default unique validator.
+    email = serializers.EmailField(max_length=254)
     password = serializers.CharField(write_only=True, style={"input_type": "password"})
 
     class Meta:

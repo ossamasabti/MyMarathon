@@ -197,3 +197,23 @@ export interface ReviewSummary {
   habits: { id: number; title: string; rate: number; done: number }[];
   goals_late: SummaryGoal[];
 }
+
+export interface Stats {
+  domains: {
+    id: number | null;
+    name: string | null;
+    color: string | null;
+    active: number;
+    achieved: number;
+    late: number;
+    progress: number | null;
+  }[];
+  weekly_tasks: { week_start: ISODate; count: number }[];
+  late_goals: (Omit<SummaryGoal, 'status'> & { expected: number; end_date: ISODate })[];
+  totals: {
+    tasks_done_30d: number;
+    goals_achieved: number;
+    goals_active: number;
+    habits_rate_30d: number | null;
+  };
+}

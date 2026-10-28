@@ -8,6 +8,7 @@ import type { DomainInput } from '@/api/domains';
 import type { Domain } from '@/api/types';
 import { fr } from '@/i18n/fr';
 import { MIN_TOUCH, radius, spacing } from '@/theme/colors';
+import { DOMAIN_PALETTE, useDomainColor } from '@/theme/domainColors';
 import { useTheme } from '@/theme/useTheme';
 
 import { AppText } from './AppText';
@@ -16,8 +17,8 @@ import { TextField } from './TextField';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
-/** Mid-tone colors readable on both light and dark backgrounds. */
-export const DOMAIN_COLORS = ['#1F5FD1', '#1E7A3E', '#B42318', '#B54708', '#7A2E9E', '#0E7490', '#C11574', '#4B5563'];
+/** Validated categorical palette (see theme/domainColors.ts); the light step is stored. */
+export const DOMAIN_COLORS: readonly string[] = DOMAIN_PALETTE.map((c) => c.light);
 
 export const DOMAIN_ICONS: IconName[] = [
   'heart-outline',
@@ -34,15 +35,23 @@ export const DOMAIN_ICONS: IconName[] = [
 
 interface DomainFormProps {
   initial?: Domain;
+  /** Colors already taken: a new domain gets the next free palette slot. */
+  usedColors?: string[];
   onSubmit: (input: DomainInput) => void;
   pending: boolean;
   error: Error | null;
 }
 
-export function DomainForm({ initial, onSubmit, pending, error }: DomainFormProps) {
+export function DomainForm({ initial, usedColors = [], onSubmit, pending, error }: DomainFormProps) {
   const theme = useTheme();
+  const display = useDomainColor();
   const [name, setName] = useState(initial?.name ?? '');
-  const [color, setColor] = useState(initial?.color ?? DOMAIN_COLORS[0] ?? '#1F5FD1');
+  const [color, setColor] = useState(
+    () =>
+      initial?.color ??
+      DOMAIN_COLORS.find((c) => !usedColors.map((u) => u.toUpperCase()).includes(c)) ??
+      DOMAIN_PALETTE[0].light,
+  );
   const [icon, setIcon] = useState(initial?.icon ?? DOMAIN_ICONS[0] ?? 'heart-outline');
   const [missingName, setMissingName] = useState(false);
 
@@ -70,7 +79,7 @@ export function DomainForm({ initial, onSubmit, pending, error }: DomainFormProp
             accessibilityLabel={c}
             accessibilityState={{ selected: c === color }}
             onPress={() => setColor(c)}
-            style={[styles.swatch, { backgroundColor: c, borderColor: c === color ? theme.text : 'transparent' }]}>
+            style={[styles.swatch, { backgroundColor: display(c), borderColor: c === color ? theme.text : 'transparent' }]}>
             {c === color ? <Ionicons name="checkmark" size={20} color="#FFFFFF" /> : null}
           </Pressable>
         ))}
@@ -94,7 +103,7 @@ export function DomainForm({ initial, onSubmit, pending, error }: DomainFormProp
                 borderColor: name === icon ? theme.primary : theme.border,
               },
             ]}>
-            <Ionicons name={name} size={22} color={name === icon ? color : theme.textMuted} />
+            <Ionicons name={name} size={22} color={name === icon ? display(color) : theme.textMuted} />
           </Pressable>
         ))}
       </View>
