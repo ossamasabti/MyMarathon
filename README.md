@@ -10,6 +10,11 @@ Organise tes objectifs dans le temps : de la vision à 5 ans jusqu'à la tâche 
 - Node.js 20+ (testé avec 22) et npm
 - Pour le mobile : l'application **Expo Go** sur ton téléphone, sur le même réseau Wi-Fi que ton PC
 
+## Ouvrir l'app en un clic (développement)
+Double-clique sur **`MyMarathon-dev.bat`** à la racine du dépôt. Il ouvre deux fenêtres, l'API (migrations puis `runserver 0.0.0.0:8000`) et l'app web (`npx expo start --web`), puis le navigateur sur http://localhost:8081. Ferme les deux fenêtres pour tout arrêter. Un ancien serveur web resté bloqué sur le port 8081 est arrêté automatiquement. Pour un raccourci sur le Bureau : clic droit sur le fichier → **Envoyer vers → Bureau (créer un raccourci)**.
+
+Les prérequis ci-dessous (venv Python, `npm install`) doivent avoir été faits une fois.
+
 ## Lancer le backend
 ```bash
 cd backend

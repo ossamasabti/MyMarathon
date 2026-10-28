@@ -109,6 +109,7 @@ largeur ≥ 768 px → barre latérale avec tous les écrans ; sinon onglets en 
 - Fin de chaque étape : tests, démarrage web vérifié, commit, puis attente de validation.
 
 ## Commandes utiles
+`MyMarathon-dev.bat` (racine) : lance API + web dans deux fenêtres cmd et ouvre le navigateur ; force `EXPO_PUBLIC_API_URL=http://localhost:8000` et arrête un `node.exe` resté sur le port 8081.
 Backend (depuis `backend/`, venv dans `backend/.venv`) :
 ```
 .venv/Scripts/python -m pip install -r requirements-dev.txt
