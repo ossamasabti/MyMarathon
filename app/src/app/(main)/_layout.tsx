@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router/js-tabs';
 
 import { AppTabBar } from '@/components/AppTabBar';
+import { FocusBanner } from '@/components/FocusBanner';
 import { NotificationsSync } from '@/components/NotificationsSync';
 import { useAuthStore } from '@/stores/authStore';
 import { useIsWide, useTheme } from '@/theme/useTheme';
@@ -25,6 +26,7 @@ export default function MainLayout() {
         <Tabs.Screen name="week" />
         <Tabs.Screen name="goals" />
         <Tabs.Screen name="timeline" />
+        <Tabs.Screen name="focus" />
         <Tabs.Screen name="stats" />
         <Tabs.Screen name="review" />
         <Tabs.Screen name="habits" />
@@ -33,6 +35,7 @@ export default function MainLayout() {
         <Tabs.Screen name="domains" />
         <Tabs.Screen name="tasks" />
       </Tabs>
+      <FocusBanner />
     </>
   );
 }

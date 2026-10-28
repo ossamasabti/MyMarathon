@@ -21,6 +21,7 @@ export type Horizon = 'vision' | 'annual' | 'quarterly' | 'monthly';
 export type GoalStatus = 'active' | 'paused' | 'achieved' | 'abandoned';
 export type Priority = 'high' | 'normal' | 'low';
 export type TaskStatus = 'todo' | 'in_progress' | 'done';
+export type FocusMode = 'stopwatch' | 'timer';
 
 /** ISO date "YYYY-MM-DD". */
 export type ISODate = string;
@@ -111,6 +112,9 @@ export interface Task {
   notes: string;
   due_date: ISODate | null;
   planned_date: ISODate | null;
+  /** "HH:MM:SS", only on a planned day. */
+  start_time: string | null;
+  end_time: string | null;
   priority: Priority;
   estimated_minutes: number | null;
   status: TaskStatus;
@@ -118,6 +122,8 @@ export interface Task {
   created_at: string;
   goal_path: GoalRef[];
   domain: DomainRef | null;
+  /** Total of the task's focus sessions. */
+  time_spent_seconds: number;
 }
 
 export interface TaskInput {
@@ -126,6 +132,9 @@ export interface TaskInput {
   notes?: string;
   due_date?: ISODate | null;
   planned_date?: ISODate | null;
+  /** "HH:MM". */
+  start_time?: string | null;
+  end_time?: string | null;
   priority?: Priority;
   estimated_minutes?: number | null;
   status?: TaskStatus;
@@ -215,5 +224,28 @@ export interface Stats {
     goals_achieved: number;
     goals_active: number;
     habits_rate_30d: number | null;
+    focus_seconds_30d: number;
   };
+}
+
+export interface FocusSession {
+  id: number;
+  task: number | null;
+  task_title: string | null;
+  mode: FocusMode;
+  started_at: string;
+  ended_at: string;
+  /** Focused time, pauses excluded. */
+  duration_seconds: number;
+  planned_minutes: number | null;
+  created_at: string;
+}
+
+export interface FocusSessionInput {
+  task: number | null;
+  mode: FocusMode;
+  started_at: string;
+  ended_at: string;
+  duration_seconds: number;
+  planned_minutes: number | null;
 }

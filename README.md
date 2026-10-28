@@ -54,6 +54,12 @@ npx expo lint
 npx expo export --platform web
 ```
 
+## Concentration (chrono et minuteur)
+- Dans le détail d'une tâche : **heure de début / fin** (créneau sur la date planifiée) et bouton **Se concentrer sur cette tâche** ; l'écran **Concentration** (menu) permet aussi une session libre.
+- **Chrono** (le temps monte) ou **minuteur** (25, 45, 60 min ou durée libre). Pause, reprise, fin ; la session continue si tu changes d'écran ou recharges la page.
+- Fin du minuteur : signal sonore sur PC / web (fenêtre ouverte), notification et vibration sur téléphone.
+- Chaque session enregistrée s'ajoute au **temps passé** de la tâche et à la tuile « Concentration (30 jours) » des statistiques.
+
 ## Rappels (notifications locales)
 Dans **Réglages → Rappels** (application mobile uniquement) :
 - **Rappels d'échéance** : à 9 h le jour d'échéance d'une tâche, et 3 jours avant la fin d'un objectif actif ;

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Domain, Goal, Habit, HabitLog, Review, Task
+from .models import Domain, FocusSession, Goal, Habit, HabitLog, Review, Task
 
 
 @admin.register(Domain)
@@ -38,3 +38,9 @@ class HabitLogAdmin(admin.ModelAdmin):
 class ReviewAdmin(admin.ModelAdmin):
     list_display = ["type", "period_start", "period_end", "user"]
     list_filter = ["type"]
+
+
+@admin.register(FocusSession)
+class FocusSessionAdmin(admin.ModelAdmin):
+    list_display = ["started_at", "mode", "duration_seconds", "task", "user"]
+    list_filter = ["mode"]

@@ -1,4 +1,4 @@
-from django.db.models import Case, IntegerField, Q, Value, When
+from django.db.models import Case, F, IntegerField, Q, Value, When
 from django.utils import timezone
 from django_filters import rest_framework as filters
 from rest_framework import serializers, viewsets
@@ -9,13 +9,14 @@ from rest_framework.response import Response
 from core.mixins import OwnedQuerysetMixin
 
 from .habits import is_due
-from .models import Domain, Goal, Habit, HabitLog, Priority, Review, ReviewType, Task, TaskStatus
+from .models import Domain, FocusSession, Goal, Habit, HabitLog, Priority, Review, ReviewType, Task, TaskStatus
 from .periods import period_bounds
 from .review_summary import build_summary
 from .rules import is_late
 from .stats import build_stats
 from .serializers import (
     DomainSerializer,
+    FocusSessionSerializer,
     GoalSerializer,
     HabitCheckSerializer,
     HabitSerializer,
@@ -133,7 +134,8 @@ class TaskViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
         )
 
         def serialize(queryset):
-            ordered = queryset.order_by(priority_rank, "planned_date", "id")
+            # Tasks with a time slot first, in time order.
+            ordered = queryset.order_by(F("start_time").asc(nulls_last=True), priority_rank, "planned_date", "id")
             return TaskSerializer(ordered, many=True, context=context).data
 
         return Response({"overdue": serialize(overdue), "today": serialize(due_today), "done": serialize(done)})
@@ -194,6 +196,21 @@ class ReviewViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
         day = params.validated_data.get("period_start") or timezone.localdate()
         start, end = period_bounds(review_type, day)
         return Response(build_summary(request.user, start, end, timezone.localdate()))
+
+
+class FocusSessionFilter(filters.FilterSet):
+    started_after = filters.DateFilter(field_name="started_at", lookup_expr="date__gte")
+    started_before = filters.DateFilter(field_name="started_at", lookup_expr="date__lte")
+
+    class Meta:
+        model = FocusSession
+        fields = ["task", "mode"]
+
+
+class FocusSessionViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
+    queryset = FocusSession.objects.select_related("task")
+    serializer_class = FocusSessionSerializer
+    filterset_class = FocusSessionFilter
 
 
 class StatsQuerySerializer(serializers.Serializer):

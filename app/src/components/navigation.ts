@@ -8,7 +8,7 @@ type IconName = ComponentProps<typeof Ionicons>['name'];
 export interface NavItem {
   /** Route name inside the (main) tabs navigator. */
   name: string;
-  href: '/' | '/week' | '/goals' | '/timeline' | '/stats' | '/review' | '/settings' | '/more';
+  href: '/' | '/week' | '/goals' | '/timeline' | '/focus' | '/stats' | '/review' | '/settings' | '/more';
   label: string;
   icon: IconName;
 }
@@ -17,13 +17,14 @@ const today: NavItem = { name: 'index', href: '/', label: fr.nav.today, icon: 't
 const week: NavItem = { name: 'week', href: '/week', label: fr.nav.week, icon: 'calendar-outline' };
 const goals: NavItem = { name: 'goals', href: '/goals', label: fr.nav.goals, icon: 'git-network-outline' };
 const timeline: NavItem = { name: 'timeline', href: '/timeline', label: fr.nav.timeline, icon: 'analytics-outline' };
+const focus: NavItem = { name: 'focus', href: '/focus', label: fr.nav.focus, icon: 'timer-outline' };
 const stats: NavItem = { name: 'stats', href: '/stats', label: fr.nav.stats, icon: 'stats-chart-outline' };
 const review: NavItem = { name: 'review', href: '/review', label: fr.nav.review, icon: 'checkmark-done-outline' };
 const settings: NavItem = { name: 'settings', href: '/settings', label: fr.nav.settings, icon: 'settings-outline' };
 const more: NavItem = { name: 'more', href: '/more', label: fr.nav.more, icon: 'ellipsis-horizontal' };
 
 /** Screens reachable from the mobile "Plus" menu. */
-export const SECONDARY_ITEMS: readonly NavItem[] = [stats, review, settings];
+export const SECONDARY_ITEMS: readonly NavItem[] = [focus, stats, review, settings];
 
 /** Bottom tabs on mobile. */
 export const MOBILE_ITEMS: readonly NavItem[] = [today, week, goals, timeline, more];

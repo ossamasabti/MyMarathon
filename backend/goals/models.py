@@ -99,6 +99,9 @@ class Task(models.Model):
     notes = models.TextField(blank=True)
     due_date = models.DateField("échéance", null=True, blank=True)
     planned_date = models.DateField("date planifiée", null=True, blank=True)
+    # Planned time slot on planned_date (both optional; end requires start).
+    start_time = models.TimeField("heure de début", null=True, blank=True)
+    end_time = models.TimeField("heure de fin", null=True, blank=True)
     priority = models.CharField("priorité", max_length=10, choices=Priority.choices, default=Priority.NORMAL)
     estimated_minutes = models.PositiveIntegerField("durée estimée (min)", null=True, blank=True)
     status = models.CharField("statut", max_length=12, choices=TaskStatus.choices, default=TaskStatus.TODO)
@@ -107,7 +110,7 @@ class Task(models.Model):
 
     class Meta:
         verbose_name = "tâche"
-        ordering = ["planned_date", "due_date", "id"]
+        ordering = ["planned_date", models.F("start_time").asc(nulls_last=True), "due_date", "id"]
 
     def __str__(self) -> str:
         return self.title
@@ -118,7 +121,36 @@ class Task(models.Model):
             self.completed_at = timezone.now()
         elif self.status != TaskStatus.DONE:
             self.completed_at = None
+        # A time slot only exists on a planned day.
+        if self.planned_date is None:
+            self.start_time = self.end_time = None
         super().save(*args, **kwargs)
+
+
+class FocusMode(models.TextChoices):
+    STOPWATCH = "stopwatch", "Chrono"
+    TIMER = "timer", "Minuteur"
+
+
+class FocusSession(models.Model):
+    """A finished focus session (stopwatch or timer), optionally on a task."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="focus_sessions")
+    task = models.ForeignKey(Task, on_delete=models.SET_NULL, null=True, blank=True, related_name="focus_sessions")
+    mode = models.CharField("mode", max_length=10, choices=FocusMode.choices)
+    started_at = models.DateTimeField("début")
+    ended_at = models.DateTimeField("fin")
+    # Focused time, pauses excluded.
+    duration_seconds = models.PositiveIntegerField("durée (s)")
+    planned_minutes = models.PositiveIntegerField("durée visée (min)", null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "session de concentration"
+        ordering = ["-started_at", "-id"]
+
+    def __str__(self) -> str:
+        return f"{self.get_mode_display()} {self.started_at:%d/%m %H:%M}"
 
 
 class Frequency(models.TextChoices):

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { cancelAllReminders } from '@/lib/notifications';
 import { useAuthStore } from '@/stores/authStore';
+import { useFocusStore } from '@/stores/focusStore';
 
 import { apiRequest } from './client';
 import type { AuthResponse, TokenPair, User } from './types';
@@ -70,6 +71,7 @@ export function useLogout() {
     onSettled: async () => {
       // Reminders belong to the account that scheduled them.
       await cancelAllReminders().catch(() => undefined);
+      useFocusStore.getState().clear();
       await useAuthStore.getState().signOut();
       queryClient.clear();
     },

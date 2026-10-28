@@ -7,6 +7,7 @@ import { useToggleTask } from '@/api/tasks';
 import type { Task } from '@/api/types';
 import { fr } from '@/i18n/fr';
 import { formatDate } from '@/lib/dates';
+import { formatSlot } from '@/lib/time';
 import { MIN_TOUCH, spacing } from '@/theme/colors';
 import { useTheme } from '@/theme/useTheme';
 
@@ -27,6 +28,7 @@ export function TaskRow({ task, hideGoal = false, footer }: TaskRowProps) {
   const toggle = useToggleTask();
   const done = task.status === 'done';
   const directGoal = task.goal_path[task.goal_path.length - 1];
+  const slot = formatSlot(task.start_time, task.end_time);
 
   return (
     <View style={[styles.row, { borderBottomColor: theme.border }]}>
@@ -48,6 +50,11 @@ export function TaskRow({ task, hideGoal = false, footer }: TaskRowProps) {
         onPress={() => router.push({ pathname: '/tasks/[id]', params: { id: String(task.id) } })}
         style={({ pressed }) => [styles.body, pressed && { opacity: 0.7 }]}>
         <View style={styles.titleRow}>
+          {slot ? (
+            <AppText variant="small" color={theme.primary} style={styles.slot} accessibilityLabel={fr.task.slotLabel(slot)}>
+              {slot}
+            </AppText>
+          ) : null}
           {task.priority === 'high' ? (
             <Ionicons name="flag" size={14} color={theme.danger} accessibilityLabel={fr.priority.high} />
           ) : null}
@@ -87,6 +94,7 @@ const styles = StyleSheet.create({
   body: { flex: 1, minHeight: MIN_TOUCH, justifyContent: 'center', paddingVertical: spacing.xs, gap: 2 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   title: { flex: 1 },
+  slot: { fontWeight: '600', fontVariant: ['tabular-nums'] },
   goalRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   goalText: { flex: 1 },
   footer: { width: '100%', flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.xs },

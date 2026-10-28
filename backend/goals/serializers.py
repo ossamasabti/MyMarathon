@@ -1,11 +1,12 @@
 from collections import defaultdict
 from datetime import timedelta
 
+from django.db.models import Sum
 from django.utils import timezone
 from rest_framework import serializers
 
 from . import habits as habits_rules
-from .models import Domain, Frequency, Goal, Habit, HabitLog, Review, Task
+from .models import Domain, FocusMode, FocusSession, Frequency, Goal, Habit, HabitLog, Review, Task
 from .periods import period_bounds
 from .rules import GoalShape, ProgressIndex, is_late, validate_goal
 
@@ -121,10 +122,30 @@ class GoalSerializer(serializers.ModelSerializer):
         return {"total": index.task_totals[goal.id], "done": index.task_done[goal.id]}
 
 
+def focus_totals(context: dict) -> dict[int, int]:
+    """Focused seconds per task of the user, loaded once per request after any write."""
+    if "_focus_totals" not in context:
+        rows = (
+            FocusSession.objects.filter(user=context["request"].user, task__isnull=False)
+            .values("task_id")
+            .annotate(total=Sum("duration_seconds"))
+        )
+        context["_focus_totals"] = {row["task_id"]: row["total"] for row in rows}
+    return context["_focus_totals"]
+
+
+def final_value(serializer: serializers.Serializer, attrs: dict, field: str):
+    """Value a field will have after this write (partial updates fall back to the instance)."""
+    if field in attrs:
+        return attrs[field]
+    return getattr(serializer.instance, field, None)
+
+
 class TaskSerializer(serializers.ModelSerializer):
     goal = OwnedPrimaryKeyRelatedField(queryset=Goal.objects.all(), allow_null=True, required=False)
     goal_path = serializers.SerializerMethodField()
     domain = serializers.SerializerMethodField()
+    time_spent_seconds = serializers.SerializerMethodField()
 
     class Meta:
         model = Task
@@ -135,6 +156,8 @@ class TaskSerializer(serializers.ModelSerializer):
             "notes",
             "due_date",
             "planned_date",
+            "start_time",
+            "end_time",
             "priority",
             "estimated_minutes",
             "status",
@@ -142,8 +165,25 @@ class TaskSerializer(serializers.ModelSerializer):
             "created_at",
             "goal_path",
             "domain",
+            "time_spent_seconds",
         ]
         read_only_fields = ["completed_at", "created_at"]
+
+    def validate(self, attrs: dict) -> dict:
+        start = final_value(self, attrs, "start_time")
+        end = final_value(self, attrs, "end_time")
+        if end is not None and start is None:
+            raise serializers.ValidationError({"end_time": "Indique aussi l'heure de début."})
+        if start is not None and end is not None and end <= start:
+            raise serializers.ValidationError({"end_time": "L'heure de fin doit être après l'heure de début."})
+        # Unplanning a task clears its slot (Task.save); setting a slot needs a planned day.
+        setting_slot = attrs.get("start_time") is not None or attrs.get("end_time") is not None
+        if setting_slot and final_value(self, attrs, "planned_date") is None:
+            raise serializers.ValidationError({"start_time": "Planifie d'abord un jour pour cette tâche."})
+        return attrs
+
+    def get_time_spent_seconds(self, task: Task) -> int:
+        return focus_totals(self.context).get(task.id, 0)
 
     def get_goal_path(self, task: Task) -> list[dict]:
         """Why this task exists: the goal chain from the vision down to the task's goal."""
@@ -295,4 +335,52 @@ class ReviewSerializer(serializers.ModelSerializer):
         if duplicates.exists():
             raise serializers.ValidationError({"period_start": "Une revue existe déjà pour cette période."})
         attrs["period_end"] = expected_end
+        return attrs
+
+
+# --- Focus sessions -----------------------------------------------------------
+
+# Clock drift allowed between the device that timed the session and the server.
+CLOCK_TOLERANCE = timedelta(minutes=5)
+
+
+class FocusSessionSerializer(serializers.ModelSerializer):
+    task = OwnedPrimaryKeyRelatedField(queryset=Task.objects.all(), allow_null=True, required=False)
+    task_title = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FocusSession
+        fields = [
+            "id",
+            "task",
+            "task_title",
+            "mode",
+            "started_at",
+            "ended_at",
+            "duration_seconds",
+            "planned_minutes",
+            "created_at",
+        ]
+        read_only_fields = ["created_at"]
+
+    def get_task_title(self, session: FocusSession) -> str | None:
+        return session.task.title if session.task_id else None
+
+    def validate(self, attrs: dict) -> dict:
+        started = final_value(self, attrs, "started_at")
+        ended = final_value(self, attrs, "ended_at")
+        duration = final_value(self, attrs, "duration_seconds")
+        if ended <= started:
+            raise serializers.ValidationError({"ended_at": "La fin doit être après le début."})
+        if ended > timezone.now() + CLOCK_TOLERANCE:
+            raise serializers.ValidationError({"ended_at": "Une session ne peut pas finir dans le futur."})
+        if duration < 1:
+            raise serializers.ValidationError({"duration_seconds": "La session est vide."})
+        # Pauses can only shorten a session; one second of rounding is allowed.
+        if duration > (ended - started).total_seconds() + 1:
+            raise serializers.ValidationError(
+                {"duration_seconds": "La durée dépasse le temps écoulé entre le début et la fin."}
+            )
+        if final_value(self, attrs, "mode") == FocusMode.TIMER and not final_value(self, attrs, "planned_minutes"):
+            raise serializers.ValidationError({"planned_minutes": "Indique la durée du minuteur."})
         return attrs

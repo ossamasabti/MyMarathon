@@ -3,10 +3,11 @@
 from collections import defaultdict
 from datetime import date, timedelta
 
+from django.db.models import Sum
 from django.utils import timezone
 
 from .habits import completion, tracking_start
-from .models import Domain, GoalStatus, Habit, HabitLog, Task, TaskStatus
+from .models import Domain, FocusSession, GoalStatus, Habit, HabitLog, Task, TaskStatus
 from .rules import ProgressIndex, expected_progress, is_late
 
 
@@ -91,6 +92,10 @@ def build_stats(user, today: date, weeks: int) -> dict:
         if rate is not None:
             rates.append(rate)
 
+    focus_30d = FocusSession.objects.filter(user=user, started_at__date__gte=month_ago).aggregate(
+        total=Sum("duration_seconds")
+    )["total"]
+
     return {
         "domains": domains_out,
         "weekly_tasks": weekly,
@@ -100,5 +105,6 @@ def build_stats(user, today: date, weeks: int) -> dict:
             "goals_achieved": sum(1 for g in goals.values() if g.status == GoalStatus.ACHIEVED),
             "goals_active": sum(1 for g in goals.values() if g.status == GoalStatus.ACTIVE),
             "habits_rate_30d": round(sum(rates) / len(rates), 4) if rates else None,
+            "focus_seconds_30d": focus_30d or 0,
         },
     }

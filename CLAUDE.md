@@ -9,7 +9,7 @@ backend/   Django 5.2 + DRF, API REST sous /api/, JWT (simplejwt), argon2
   config/    settings (tout vient de l'environnement / backend/.env), urls racine
   core/      briques partagées : OwnedQuerysetMixin (filtrage par utilisateur), health check
   accounts/  User personnalisé (identifiant = e-mail), inscription, profil, logout
-  goals/     Domain, Goal, Task, Habit, HabitLog, Review : models, rules.py (hiérarchie, progression, retard),
+  goals/     Domain, Goal, Task, Habit, HabitLog, Review, FocusSession : models, rules.py (hiérarchie, progression, retard),
              habits.py (échéance, série, taux), periods.py, review_summary.py, stats.py, serializers, viewsets, tests/
 app/       Expo SDK 58 + React Native + TypeScript strict, Expo Router
   src/app/          routes (fichier = écran). (auth) = connexion/inscription, (main) = app connectée
@@ -53,6 +53,11 @@ desktop/   version Windows autonome (MyMarathon.exe) : launcher.py, MyMarathon.s
 - `Review` : une par (user, type, period_start) ; `period_start` doit être le début exact (lundi, 1er du mois, 1er du trimestre) ; `period_end` calculé. `Goal.achieved_at` (auto, comme `Task.completed_at`) sert au résumé.
 - `review_summary.build_summary` : tâches terminées, objectifs qui ont avancé (via eux-mêmes ou un descendant), objectifs atteints dans la période, taux des habitudes, objectifs en retard.
 - Front : `/review` (hub : type, période, historique) → `/review/[type]/[start]` (résumé + questions de `reviewQuestions.ts`, `start` normalisé au début de période) ; `/habits/[id]` (historique 4 semaines cochable pour rattraper, édition, suppression).
+
+### Créneaux horaires et concentration
+- `Task.start_time` / `end_time` (facultatifs) : créneau sur `planned_date`. Fin > début, fin sans début refusée, créneau refusé sans date planifiée ; déplanifier une tâche efface son créneau (`Task.save`). Tri : tâches avec heure d'abord (`Meta.ordering`, action `today`).
+- `FocusSession` (task `SET_NULL`, mode `stopwatch|timer`, started_at, ended_at, `duration_seconds` = temps concentré pauses déduites, `planned_minutes` obligatoire pour un minuteur). Validation : fin > début, pas dans le futur (5 min de tolérance d'horloge), durée ≤ fin − début. `/api/focus-sessions/` (filtres `task`, `mode`, `started_after`, `started_before`). Une tâche renvoie `time_spent_seconds` (`focus_totals(context)`, une requête) ; stats : `totals.focus_seconds_30d`.
+- Front : la session en cours vit dans `stores/focusStore.ts` (persistée, horodatages et non compteur : exacte après rechargement / veille) ; `FocusBanner` (monté dans `(main)/_layout.tsx`) arrête le minuteur à l'échéance, joue `lib/focusAlert(.web).ts` (bip Web Audio sur web/bureau ; notification planifiée + vibration sur mobile) et affiche une pastille hors de `/focus`. L'écran `(main)/focus.tsx` (`?task=`) reste monté dans les onglets : il garde le temps dans le titre de la fenêtre et son dialogue de fin s'ouvre sur n'importe quel écran. `TimeField` = saisie HH:MM (« 9h30 » accepté), `lib/time.ts` pour les formats.
 
 ### Statistiques, rappels, réglages, builds
 - `GET /api/stats/?weeks=12` (`goals/stats.py`) : progression moyenne des objectifs racines de chaque domaine, tâches terminées par semaine (semaines vides à 0), objectifs en retard (réel vs attendu), totaux sur 30 jours.
@@ -129,3 +134,4 @@ Version Windows (depuis la racine) : `powershell -ExecutionPolicy Bypass -File d
 - [x] Étape 4 : Habitudes et Revues guidées
 - [x] Étape 5 : Statistiques, notifications locales, configuration EAS (APK) et build web
 - [x] Version Windows autonome (.exe) à partager
+- [x] Créneaux horaires des tâches, sessions de concentration (chrono / minuteur) et temps passé

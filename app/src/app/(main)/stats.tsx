@@ -12,6 +12,7 @@ import { StatTile } from '@/components/StatTile';
 import { EmptyState, ErrorState, LoadingState } from '@/components/States';
 import { WeeklyColumns } from '@/components/WeeklyColumns';
 import { fr } from '@/i18n/fr';
+import { formatDuration } from '@/lib/time';
 import { MIN_TOUCH, spacing } from '@/theme/colors';
 import { useDomainColor } from '@/theme/domainColors';
 import { useTheme } from '@/theme/useTheme';
@@ -37,7 +38,10 @@ export default function StatsScreen() {
 function StatsContent({ stats }: { stats: Stats }) {
   const { totals } = stats;
   const nothingYet =
-    stats.domains.length === 0 && totals.tasks_done_30d === 0 && stats.weekly_tasks.every((w) => w.count === 0);
+    stats.domains.length === 0 &&
+    totals.tasks_done_30d === 0 &&
+    totals.focus_seconds_30d === 0 &&
+    stats.weekly_tasks.every((w) => w.count === 0);
   if (nothingYet) return <EmptyState message={fr.screens.stats.empty} />;
 
   return (
@@ -49,6 +53,7 @@ function StatsContent({ stats }: { stats: Stats }) {
           label={fr.screens.stats.habitsRate}
           value={totals.habits_rate_30d === null ? '—' : `${percent(totals.habits_rate_30d)} %`}
         />
+        <StatTile label={fr.screens.stats.focus30} value={formatDuration(totals.focus_seconds_30d)} />
       </View>
 
       <Section title={fr.screens.stats.byDomain}>
