@@ -9,18 +9,21 @@ backend/   Django 5.2 + DRF, API REST sous /api/, JWT (simplejwt), argon2
   config/    settings (tout vient de l'environnement / backend/.env), urls racine
   core/      briques partagées : OwnedQuerysetMixin (filtrage par utilisateur), health check
   accounts/  User personnalisé (identifiant = e-mail), inscription, profil, logout
-  goals/     Domain, Goal, Task : models, rules.py (règles métier), serializers, viewsets, tests/
+  goals/     Domain, Goal, Task, Habit, HabitLog, Review : models, rules.py (hiérarchie, progression, retard),
+             habits.py (échéance, série, taux), periods.py, review_summary.py, serializers, viewsets, tests/
 app/       Expo SDK 58 + React Native + TypeScript strict, Expo Router
   src/app/          routes (fichier = écran). (auth) = connexion/inscription, (main) = app connectée
   src/api/          client.ts (fetch + refresh JWT automatique), hooks TanStack Query par ressource
   src/stores/       Zustand (authStore : statut, tokens)
   src/lib/          tokenStorage(.web).ts (SecureStore / localStorage), dates.ts (ISO <-> JJ/MM/AAAA),
                     horizons.ts, params.ts (useNumberParam), navigation.ts (goBack), numbers.ts,
-                    calendar.ts (semaine lundi→dimanche, géométrie des barres de la frise)
+                    calendar.ts (semaine lundi→dimanche, géométrie de la frise, périodes de revue),
+                    reviewQuestions.ts (questions par type de revue, clés stables)
   src/theme/        tokens couleurs clair/sombre, espacements, useTheme / useIsWide
   src/components/   composants partagés : Screen, Header, Section, Button, IconButton, TextField, DateField,
                     ChipSelect, Dialog/ConfirmDialog, States, ProgressBar, Badge, TaskRow, QuickAddTask,
-                    GoalPicker, GoalTree, GoalForm, DomainForm, MoveTaskDialog, Timeline, AppTabBar
+                    GoalPicker, GoalTree, GoalForm, DomainForm, MoveTaskDialog, Timeline, HabitRow, HabitForm,
+                    HabitHistory, DayPicker, AppTabBar
   src/i18n/fr.ts    tous les textes de l'interface
 ```
 
@@ -39,10 +42,19 @@ app/       Expo SDK 58 + React Native + TypeScript strict, Expo Router
   - `is_late` : objectif actif dont la progression < prorata du temps écoulé − 10 %.
 - Les serializers obtiennent l'index via `progress_index(context)`, construit paresseusement une fois par requête, après l'écriture.
 
+### Habitudes et revues
+- `Habit` (goal obligatoire à la création, `SET_NULL` en base ; frequency `daily|weekly` ; days 0=lundi…6, vide = tous les jours pour une quotidienne) et `HabitLog` (unique habit+date).
+- `habits.py` : `is_due` (une hebdomadaire n'est plus due une fois faite dans la semaine), `streak` (aujourd'hui non coché ne casse pas la série ; en semaines pour une hebdomadaire), `completion` (jours futurs exclus), `tracking_start` (création ou premier jour rattrapé : les taux ne comptent pas les jours d'avant).
+- Les habitudes n'entrent pas dans la progression des objectifs (règle du cahier des charges).
+- `Review` : une par (user, type, period_start) ; `period_start` doit être le début exact (lundi, 1er du mois, 1er du trimestre) ; `period_end` calculé. `Goal.achieved_at` (auto, comme `Task.completed_at`) sert au résumé.
+- `review_summary.build_summary` : tâches terminées, objectifs qui ont avancé (via eux-mêmes ou un descendant), objectifs atteints dans la période, taux des habitudes, objectifs en retard.
+- Front : `/review` (hub : type, période, historique) → `/review/[type]/[start]` (résumé + questions de `reviewQuestions.ts`, `start` normalisé au début de période) ; `/habits/[id]` (historique 4 semaines cochable pour rattraper, édition, suppression).
+
 ### API métier
 - `/api/domains/`, `/api/goals/` (filtres `domain`, `horizon`, `status`, `parent`, `root=true`, `active_from`/`active_to` = chevauchement d'une période), `/api/tasks/` (filtres `goal`, `status`, `planned_date`, `planned_after`, `planned_before`, `unplanned=true`, `domain`) : CRUD.
 - `GET /api/goals/tree/?domain=` : arbre imbriqué avec progression, retard et tâches par nœud.
 - `GET /api/tasks/today/` : `{overdue, today, done}`.
+- `/api/habits/` (filtre `goal`) + `GET today/`, `POST {id}/check/` `{date?, done}` (date future refusée), `GET {id}/logs/?from=&to=` ; `/api/reviews/` (filtres `type`, `period_start`) + `GET summary/?type=&period_start=`.
 - Un goal renvoie `progress`, `is_late`, `ancestors`, `children_count`, `task_counts` ; une tâche renvoie `goal_path` (vision → objectif direct) et `domain`.
 - Les FK (`parent`, `domain`, `goal`) n'acceptent que des objets de l'utilisateur (`OwnedPrimaryKeyRelatedField`) → 400 sinon.
 - Frontend : hooks dans `src/api/{domains,goals,tasks}.ts`, clés dans `src/api/keys.ts` ; après toute écriture, `invalidatePlanning()` rafraîchit goals/tree/tasks ; la case à cocher d'une tâche est optimiste (`useToggleTask`).
@@ -93,5 +105,5 @@ npx expo export --platform web   # build web statique dans dist/
 - [x] Étape 1 : dépôt, auth JWT, navigation et écrans vides, connexion app ↔ API
 - [x] Étape 2 : Domaines, Objectifs, Tâches + progression (Aujourd'hui, Arbre, Domaine, Détail, édition de tâche)
 - [x] Étape 3 : Semaine et Timeline
-- [ ] Étape 4 : Habitudes et Revues guidées
+- [x] Étape 4 : Habitudes et Revues guidées
 - [ ] Étape 5 : Statistiques, notifications locales, build APK (EAS) et web

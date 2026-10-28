@@ -1,16 +1,19 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ApiError } from '@/api/client';
 import { useDomains } from '@/api/domains';
 import { useDeleteGoal, useGoal, useGoals, useSaveGoal } from '@/api/goals';
+import { useHabits, useSaveHabit } from '@/api/habits';
 import { useTasks } from '@/api/tasks';
 import type { Goal, GoalStatus } from '@/api/types';
 import { AppText } from '@/components/AppText';
 import { Badge, DomainDot, HorizonBadge } from '@/components/Badge';
 import { Button } from '@/components/Button';
-import { ConfirmDialog } from '@/components/Dialog';
+import { ConfirmDialog, Dialog } from '@/components/Dialog';
+import { HabitForm } from '@/components/HabitForm';
+import { HabitRow } from '@/components/HabitRow';
 import { Header } from '@/components/Header';
 import { IconButton } from '@/components/IconButton';
 import { ProgressBar } from '@/components/ProgressBar';
@@ -62,6 +65,9 @@ function GoalDetail({ goal }: { goal: Goal }) {
   const save = useSaveGoal(goal.id);
   const remove = useDeleteGoal();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [addingHabit, setAddingHabit] = useState(false);
+  const habits = useHabits({ goal: goal.id });
+  const saveHabit = useSaveHabit();
   const [current, setCurrent] = useState(formatDecimal(goal.current_value));
 
   const domain = domains.data?.find((d) => d.id === goal.domain);
@@ -218,9 +224,30 @@ function GoalDetail({ goal }: { goal: Goal }) {
         )}
       </Section>
 
-      <Section title={fr.goal.habits}>
-        <AppText variant="muted">{fr.goal.habitsSoon}</AppText>
+      <Section
+        title={fr.goal.habits}
+        right={<Button label={`+ ${fr.habit.add}`} variant="ghost" onPress={() => setAddingHabit(true)} />}>
+        {habits.isPending ? (
+          <LoadingState />
+        ) : habits.isError ? (
+          <ErrorState message={habits.error.message} onRetry={() => habits.refetch()} />
+        ) : habits.data.length === 0 ? (
+          <EmptyState message={fr.habit.none} />
+        ) : (
+          habits.data.map((habit) => <HabitRow key={habit.id} habit={habit} hideGoal />)
+        )}
       </Section>
+
+      <Dialog visible={addingHabit} title={fr.habit.newTitle} onClose={() => setAddingHabit(false)}>
+        <ScrollView>
+          <HabitForm
+            defaultGoal={goal.id}
+            pending={saveHabit.isPending}
+            error={saveHabit.error}
+            onSubmit={(input) => saveHabit.mutate(input, { onSuccess: () => setAddingHabit(false) })}
+          />
+        </ScrollView>
+      </Dialog>
 
       <ConfirmDialog
         visible={confirmDelete}

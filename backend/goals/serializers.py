@@ -1,7 +1,12 @@
+from collections import defaultdict
+from datetime import timedelta
+
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import Domain, Goal, Task
+from . import habits as habits_rules
+from .models import Domain, Frequency, Goal, Habit, HabitLog, Review, Task
+from .periods import period_bounds
 from .rules import GoalShape, ProgressIndex, is_late, validate_goal
 
 
@@ -157,3 +162,137 @@ class TaskSerializer(serializers.ModelSerializer):
         if goal is None or goal.domain_id is None:
             return None
         return domain_ref(goal.domain)
+
+
+# --- Habits -----------------------------------------------------------------
+
+HABIT_HISTORY_DAYS = 400
+
+
+def habit_done_dates(context: dict) -> dict[int, set]:
+    """Done dates of the user's habits (recent history), loaded once per request after any write."""
+    if "_habit_done_dates" not in context:
+        since = timezone.localdate() - timedelta(days=HABIT_HISTORY_DAYS)
+        done: dict[int, set] = defaultdict(set)
+        logs = HabitLog.objects.filter(habit__user=context["request"].user, done=True, date__gte=since)
+        for habit_id, day in logs.values_list("habit_id", "date"):
+            done[habit_id].add(day)
+        context["_habit_done_dates"] = done
+    return context["_habit_done_dates"]
+
+
+class HabitSerializer(serializers.ModelSerializer):
+    goal = OwnedPrimaryKeyRelatedField(queryset=Goal.objects.all())
+    goal_path = serializers.SerializerMethodField()
+    domain = serializers.SerializerMethodField()
+    streak = serializers.SerializerMethodField()
+    done_today = serializers.SerializerMethodField()
+    due_today = serializers.SerializerMethodField()
+    completion_30d = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Habit
+        fields = [
+            "id",
+            "goal",
+            "title",
+            "frequency",
+            "days",
+            "created_at",
+            "goal_path",
+            "domain",
+            "streak",
+            "done_today",
+            "due_today",
+            "completion_30d",
+        ]
+        read_only_fields = ["created_at"]
+
+    def validate_days(self, value) -> list[int]:
+        if not isinstance(value, list) or not all(isinstance(d, int) and 0 <= d <= 6 for d in value):
+            raise serializers.ValidationError("Les jours doivent être des nombres de 0 (lundi) à 6 (dimanche).")
+        if len(set(value)) != len(value):
+            raise serializers.ValidationError("Chaque jour ne peut apparaître qu'une fois.")
+        return sorted(value)
+
+    def validate(self, attrs: dict) -> dict:
+        frequency = attrs.get("frequency", getattr(self.instance, "frequency", Frequency.DAILY))
+        days = attrs.get("days", getattr(self.instance, "days", []))
+        if frequency == Frequency.WEEKLY and not days:
+            raise serializers.ValidationError({"days": "Choisis au moins un jour pour une habitude hebdomadaire."})
+        return attrs
+
+    def _done(self, habit: Habit) -> set:
+        return habit_done_dates(self.context)[habit.id]
+
+    def get_goal_path(self, habit: Habit) -> list[dict]:
+        index = progress_index(self.context)
+        goal = index.goals.get(habit.goal_id) if habit.goal_id else None
+        if goal is None:
+            return []
+        return [goal_ref(g) for g in [*index.ancestors(goal.id), goal]]
+
+    def get_domain(self, habit: Habit) -> dict | None:
+        goal = progress_index(self.context).goals.get(habit.goal_id) if habit.goal_id else None
+        return domain_ref(goal.domain) if goal is not None and goal.domain_id else None
+
+    def get_streak(self, habit: Habit) -> int:
+        return habits_rules.streak(habit, self._done(habit), timezone.localdate())
+
+    def get_done_today(self, habit: Habit) -> bool:
+        return timezone.localdate() in self._done(habit)
+
+    def get_due_today(self, habit: Habit) -> bool:
+        return habits_rules.is_due(habit, timezone.localdate(), self._done(habit))
+
+    def get_completion_30d(self, habit: Habit) -> float | None:
+        today = timezone.localdate()
+        done = self._done(habit)
+        start = max(today - timedelta(days=29), habits_rules.tracking_start(habit, done))
+        rate = habits_rules.completion(habit, done, start, today, today)
+        return None if rate is None else round(rate, 4)
+
+
+class HabitCheckSerializer(serializers.Serializer):
+    date = serializers.DateField(required=False)
+    done = serializers.BooleanField(default=True)
+
+    def validate_date(self, value):
+        if value > timezone.localdate():
+            raise serializers.ValidationError("Impossible de cocher un jour futur.")
+        return value
+
+
+# --- Reviews ----------------------------------------------------------------
+
+MAX_ANSWER_LENGTH = 5000
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = ["id", "type", "period_start", "period_end", "answers", "created_at", "updated_at"]
+        read_only_fields = ["period_end", "created_at", "updated_at"]
+
+    def validate_answers(self, value) -> dict:
+        if not isinstance(value, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in value.items()):
+            raise serializers.ValidationError("Les réponses doivent associer une question à un texte.")
+        if any(len(v) > MAX_ANSWER_LENGTH for v in value.values()):
+            raise serializers.ValidationError(f"Chaque réponse est limitée à {MAX_ANSWER_LENGTH} caractères.")
+        return value
+
+    def validate(self, attrs: dict) -> dict:
+        review_type = attrs.get("type", getattr(self.instance, "type", None))
+        start = attrs.get("period_start", getattr(self.instance, "period_start", None))
+        expected_start, expected_end = period_bounds(review_type, start)
+        if start != expected_start:
+            raise serializers.ValidationError(
+                {"period_start": f"Cette période doit commencer le {expected_start:%d/%m/%Y}."}
+            )
+        duplicates = Review.objects.filter(user=self.context["request"].user, type=review_type, period_start=start)
+        if self.instance is not None:
+            duplicates = duplicates.exclude(pk=self.instance.pk)
+        if duplicates.exists():
+            raise serializers.ValidationError({"period_start": "Une revue existe déjà pour cette période."})
+        attrs["period_end"] = expected_end
+        return attrs

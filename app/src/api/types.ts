@@ -136,3 +136,64 @@ export interface TodayTasks {
   today: Task[];
   done: Task[];
 }
+
+export type Frequency = 'daily' | 'weekly';
+
+export interface Habit {
+  id: number;
+  goal: number | null;
+  title: string;
+  frequency: Frequency;
+  /** Weekdays, Monday = 0. Empty for a daily habit = every day. */
+  days: number[];
+  created_at: string;
+  goal_path: GoalRef[];
+  domain: DomainRef | null;
+  streak: number;
+  done_today: boolean;
+  due_today: boolean;
+  completion_30d: number | null;
+}
+
+export interface HabitInput {
+  title: string;
+  goal: number;
+  frequency: Frequency;
+  days: number[];
+}
+
+export interface HabitLog {
+  date: ISODate;
+  done: boolean;
+}
+
+export type ReviewType = 'weekly' | 'monthly' | 'quarterly';
+
+export interface Review {
+  id: number;
+  type: ReviewType;
+  period_start: ISODate;
+  period_end: ISODate;
+  answers: Record<string, string>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SummaryGoal {
+  id: number;
+  title: string;
+  horizon: Horizon;
+  status: GoalStatus;
+  progress: number;
+  domain_color: string | null;
+}
+
+export interface ReviewSummary {
+  period_start: ISODate;
+  period_end: ISODate;
+  tasks_done: { count: number; items: { id: number; title: string; goal: number | null }[] };
+  goals_advanced: (SummaryGoal & { tasks_done: number })[];
+  goals_achieved: SummaryGoal[];
+  habits: { id: number; title: string; rate: number; done: number }[];
+  goals_late: SummaryGoal[];
+}

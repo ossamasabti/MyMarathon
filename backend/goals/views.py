@@ -1,16 +1,29 @@
 from django.db.models import Case, IntegerField, Q, Value, When
 from django.utils import timezone
 from django_filters import rest_framework as filters
-from rest_framework import viewsets
+from rest_framework import serializers, viewsets
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from core.mixins import OwnedQuerysetMixin
 
-from .models import Domain, Goal, Priority, Task, TaskStatus
+from .habits import is_due
+from .models import Domain, Goal, Habit, HabitLog, Priority, Review, ReviewType, Task, TaskStatus
+from .periods import period_bounds
+from .review_summary import build_summary
 from .rules import is_late
-from .serializers import DomainSerializer, GoalSerializer, TaskSerializer, domain_ref, progress_index
+from .serializers import (
+    DomainSerializer,
+    GoalSerializer,
+    HabitCheckSerializer,
+    HabitSerializer,
+    ReviewSerializer,
+    TaskSerializer,
+    domain_ref,
+    habit_done_dates,
+    progress_index,
+)
 
 
 class DomainViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
@@ -121,3 +134,60 @@ class TaskViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
             return TaskSerializer(ordered, many=True, context=context).data
 
         return Response({"overdue": serialize(overdue), "today": serialize(due_today), "done": serialize(done)})
+
+
+class HabitViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
+    queryset = Habit.objects.all()
+    serializer_class = HabitSerializer
+    filterset_fields = ["goal", "frequency"]
+
+    @action(detail=False)
+    def today(self, request: Request) -> Response:
+        """Habits to do today, plus those already checked today."""
+        context = self.get_serializer_context()
+        today = timezone.localdate()
+        done = habit_done_dates(context)
+        habits = [h for h in self.get_queryset() if today in done[h.id] or is_due(h, today, done[h.id])]
+        return Response(HabitSerializer(habits, many=True, context=context).data)
+
+    @action(detail=True, methods=["post"])
+    def check(self, request: Request, pk=None) -> Response:
+        """Check or uncheck a day (today by default)."""
+        habit = self.get_object()
+        serializer = HabitCheckSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        day = serializer.validated_data.get("date") or timezone.localdate()
+        HabitLog.objects.update_or_create(habit=habit, date=day, defaults={"done": serializer.validated_data["done"]})
+        # Fresh context: streaks and "done today" must reflect this write.
+        return Response(HabitSerializer(habit, context=self.get_serializer_context()).data)
+
+    @action(detail=True)
+    def logs(self, request: Request, pk=None) -> Response:
+        habit = self.get_object()
+        logs = habit.logs.all()
+        for param, lookup in (("from", "date__gte"), ("to", "date__lte")):
+            raw = request.query_params.get(param)
+            if raw:
+                logs = logs.filter(**{lookup: serializers.DateField().to_internal_value(raw)})
+        return Response([{"date": log.date, "done": log.done} for log in logs])
+
+
+class ReviewSummaryQuerySerializer(serializers.Serializer):
+    type = serializers.ChoiceField(choices=ReviewType.choices)
+    period_start = serializers.DateField(required=False)
+
+
+class ReviewViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    filterset_fields = ["type", "period_start"]
+
+    @action(detail=False)
+    def summary(self, request: Request) -> Response:
+        """Automatic summary of the period of `type` containing `period_start` (default: today)."""
+        params = ReviewSummaryQuerySerializer(data=request.query_params)
+        params.is_valid(raise_exception=True)
+        review_type = params.validated_data["type"]
+        day = params.validated_data.get("period_start") or timezone.localdate()
+        start, end = period_bounds(review_type, day)
+        return Response(build_summary(request.user, start, end, timezone.localdate()))

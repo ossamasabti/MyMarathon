@@ -1,6 +1,8 @@
+import { useTodayHabits } from '@/api/habits';
 import { useTodayTasks } from '@/api/tasks';
 import type { Task } from '@/api/types';
 import { AppText } from '@/components/AppText';
+import { HabitRow } from '@/components/HabitRow';
 import { QuickAddTask } from '@/components/QuickAddTask';
 import { Screen } from '@/components/Screen';
 import { Section } from '@/components/Section';
@@ -12,11 +14,24 @@ import { useTheme } from '@/theme/useTheme';
 
 export default function TodayScreen() {
   const today = useTodayTasks();
+  const habits = useTodayHabits();
 
   return (
     <Screen title={fr.nav.today}>
       <Section>
         <QuickAddTask plannedDate={todayISO()} placeholder={fr.task.quickAddPlaceholder} />
+      </Section>
+
+      <Section title={fr.habit.today}>
+        {habits.isPending ? (
+          <LoadingState />
+        ) : habits.isError ? (
+          <ErrorState message={habits.error.message} onRetry={() => habits.refetch()} />
+        ) : habits.data.length === 0 ? (
+          <EmptyState message={fr.habit.todayEmpty} hint={fr.habit.todayHint} />
+        ) : (
+          habits.data.map((habit) => <HabitRow key={habit.id} habit={habit} />)
+        )}
       </Section>
 
       {today.isPending ? (

@@ -21,8 +21,10 @@ export function TextField({ label, errors = [], ...inputProps }: TextFieldProps)
       <TextInput
         accessibilityLabel={label}
         placeholderTextColor={theme.textMuted}
+        textAlignVertical={inputProps.multiline ? 'top' : undefined}
         style={[
           styles.input,
+          inputProps.multiline && styles.multiline,
           {
             color: theme.text,
             backgroundColor: theme.surface,
@@ -49,4 +51,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     fontSize: 16,
   },
+  multiline: { minHeight: 96, paddingVertical: spacing.sm },
 });

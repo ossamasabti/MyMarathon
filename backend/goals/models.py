@@ -56,6 +56,7 @@ class Goal(models.Model):
     target_value = models.DecimalField("indicateur cible", max_digits=12, decimal_places=2, null=True, blank=True)
     current_value = models.DecimalField("indicateur actuel", max_digits=12, decimal_places=2, null=True, blank=True)
     unit = models.CharField("unité", max_length=30, blank=True)
+    achieved_at = models.DateTimeField("atteint le", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -65,6 +66,14 @@ class Goal(models.Model):
 
     def __str__(self) -> str:
         return self.title
+
+    def save(self, *args, **kwargs):
+        # achieved_at mirrors the status (used by period reviews).
+        if self.status == GoalStatus.ACHIEVED and self.achieved_at is None:
+            self.achieved_at = timezone.now()
+        elif self.status != GoalStatus.ACHIEVED:
+            self.achieved_at = None
+        super().save(*args, **kwargs)
 
     @property
     def rank(self) -> int:
@@ -110,3 +119,66 @@ class Task(models.Model):
         elif self.status != TaskStatus.DONE:
             self.completed_at = None
         super().save(*args, **kwargs)
+
+
+class Frequency(models.TextChoices):
+    DAILY = "daily", "Quotidienne"
+    WEEKLY = "weekly", "Hebdomadaire"
+
+
+class Habit(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="habits")
+    # Required by the API; SET_NULL keeps the habit and its history if the goal is deleted.
+    goal = models.ForeignKey(Goal, on_delete=models.SET_NULL, null=True, blank=True, related_name="habits")
+    title = models.CharField("titre", max_length=200)
+    frequency = models.CharField("fréquence", max_length=10, choices=Frequency.choices, default=Frequency.DAILY)
+    # Weekdays, Monday = 0. Empty for a daily habit = every day.
+    days = models.JSONField("jours", default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "habitude"
+        ordering = ["created_at", "id"]
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class HabitLog(models.Model):
+    habit = models.ForeignKey(Habit, on_delete=models.CASCADE, related_name="logs")
+    date = models.DateField()
+    done = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "suivi d'habitude"
+        ordering = ["date"]
+        constraints = [models.UniqueConstraint(fields=["habit", "date"], name="unique_habit_log_per_day")]
+
+    def __str__(self) -> str:
+        return f"{self.habit} – {self.date}"
+
+
+class ReviewType(models.TextChoices):
+    WEEKLY = "weekly", "Hebdomadaire"
+    MONTHLY = "monthly", "Mensuelle"
+    QUARTERLY = "quarterly", "Trimestrielle"
+
+
+class Review(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reviews")
+    type = models.CharField(max_length=10, choices=ReviewType.choices)
+    period_start = models.DateField("début de période")
+    period_end = models.DateField("fin de période")
+    answers = models.JSONField("réponses", default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "revue"
+        ordering = ["-period_start", "type"]
+        constraints = [
+            models.UniqueConstraint(fields=["user", "type", "period_start"], name="unique_review_per_period")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.get_type_display()} {self.period_start}"

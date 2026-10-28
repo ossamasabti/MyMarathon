@@ -24,6 +24,7 @@ export default function MainLayout() {
       <Tabs.Screen name="timeline" />
       <Tabs.Screen name="stats" />
       <Tabs.Screen name="review" />
+      <Tabs.Screen name="habits" />
       <Tabs.Screen name="settings" />
       <Tabs.Screen name="more" />
       <Tabs.Screen name="domains" />

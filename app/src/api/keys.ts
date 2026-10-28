@@ -9,12 +9,18 @@ export const queryKeys = {
   tasks: (params: Record<string, string | number> = {}) => ['tasks', params] as const,
   task: (id: number) => ['task', id] as const,
   today: ['tasks', 'today'] as const,
+  habits: (params: Record<string, string | number> = {}) => ['habits', params] as const,
+  habitsToday: ['habits', 'today'] as const,
+  habit: (id: number) => ['habit', id] as const,
+  habitLogs: (id: number, from: string, to: string) => ['habit', id, 'logs', from, to] as const,
+  reviews: (params: Record<string, string> = {}) => ['reviews', params] as const,
+  reviewSummary: (type: string, start: string) => ['reviews', 'summary', type, start] as const,
 };
 
-/** Goals, tasks and progress depend on each other: refresh them together after any write. */
+/** Goals, tasks, habits, progress and review summaries depend on each other: refresh them together after any write. */
 export function invalidatePlanning(queryClient: QueryClient) {
   return Promise.all(
-    ['goals', 'goal', 'tree', 'tasks', 'task'].map((key) => queryClient.invalidateQueries({ queryKey: [key] })),
+    ['goals', 'goal', 'tree', 'tasks', 'task', 'habits', 'habit', 'reviews'].map((key) => queryClient.invalidateQueries({ queryKey: [key] })),
   );
 }
 
