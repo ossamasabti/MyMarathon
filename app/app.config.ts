@@ -17,12 +17,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   scheme: 'mymarathon',
   userInterfaceStyle: 'automatic',
   ios: {
-    icon: './assets/expo.icon',
     bundleIdentifier: 'com.mymarathon.app',
   },
   android: {
     adaptiveIcon: {
-      backgroundColor: '#E6F4FE',
+      backgroundColor: '#1F5FD1',
       foregroundImage: './assets/images/android-icon-foreground.png',
       backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
@@ -39,9 +38,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-splash-screen',
       {
-        backgroundColor: '#208AEF',
+        backgroundColor: '#1F5FD1',
         image: './assets/images/splash-icon.png',
-        imageWidth: 76,
+        imageWidth: 140,
       },
     ],
     'expo-secure-store',
