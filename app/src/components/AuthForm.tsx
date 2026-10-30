@@ -7,6 +7,7 @@ import { fr } from '@/i18n/fr';
 import { radius, spacing } from '@/theme/colors';
 import { useTheme } from '@/theme/useTheme';
 
+import { AppLogo } from './AppLogo';
 import { AppText } from './AppText';
 import { Button } from './Button';
 import { Screen } from './Screen';
@@ -58,6 +59,7 @@ export function AuthForm({ mode, onSubmit, pending, error }: AuthFormProps) {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.wrapper}>
         <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={styles.header}>
+            <AppLogo size={72} />
             <AppText variant="title">{fr.appName}</AppText>
             <AppText variant="muted">{fr.tagline}</AppText>
           </View>
@@ -123,5 +125,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radius.lg,
   },
-  header: { gap: spacing.xs, marginBottom: spacing.sm },
+  header: { alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm },
 });

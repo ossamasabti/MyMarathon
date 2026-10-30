@@ -6,6 +6,7 @@ import { fr } from '@/i18n/fr';
 import { MIN_TOUCH, radius, spacing } from '@/theme/colors';
 import { useIsWide, useTheme } from '@/theme/useTheme';
 
+import { AppLogo } from './AppLogo';
 import { AppText } from './AppText';
 import { MOBILE_ITEMS, SECONDARY_ITEMS, WIDE_ITEMS, type NavItem } from './navigation';
 
@@ -59,9 +60,10 @@ export function AppTabBar({ state, navigateToTab, insets }: BottomTabBarProps) {
           styles.sidebar,
           { backgroundColor: theme.surface, borderRightColor: theme.border, paddingTop: insets.top + spacing.lg },
         ]}>
-        <AppText variant="heading" style={styles.brand}>
-          {fr.appName}
-        </AppText>
+        <View style={styles.brand}>
+          <AppLogo size={36} />
+          <AppText variant="heading">{fr.appName}</AppText>
+        </View>
         {items.map(renderItem)}
       </View>
     );
@@ -86,7 +88,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     gap: spacing.xs,
   },
-  brand: { paddingHorizontal: spacing.sm, marginBottom: spacing.md },
+  brand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    marginBottom: spacing.md,
+  },
   sideItem: {
     minHeight: MIN_TOUCH,
     flexDirection: 'row',
