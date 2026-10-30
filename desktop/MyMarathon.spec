@@ -11,8 +11,15 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 os.environ.setdefault("SECRET_KEY", "build-only")
 BACKEND_APPS = ["config", "core", "accounts", "goals"]
 
-# Loaded by name at runtime (password hasher, WSGI server), invisible to the import analysis.
-hiddenimports = ["waitress", "argon2", "argon2._password_hasher", "argon2.low_level", "_argon2_cffi_bindings"]
+# Loaded by name at runtime (password hasher, WSGI server, middleware), invisible to the import analysis.
+hiddenimports = [
+    "waitress",
+    "whitenoise.middleware",
+    "argon2",
+    "argon2._password_hasher",
+    "argon2.low_level",
+    "_argon2_cffi_bindings",
+]
 for package in BACKEND_APPS + ["django", "rest_framework", "rest_framework_simplejwt", "corsheaders", "django_filters"]:
     hiddenimports += collect_submodules(package, filter=lambda name: ".tests" not in name)
 

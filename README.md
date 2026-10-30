@@ -93,7 +93,7 @@ Le profil `preview` (`app/eas.json`) produit un APK qui parle au backend de ton 
 3. sur le PC : `ALLOWED_HOSTS` contient l'IP du PC (`backend/.env`), le backend tourne avec `runserver 0.0.0.0:8000`, et le pare-feu Windows autorise Python sur les réseaux privés ;
 4. sur le téléphone (même Wi-Fi) : installer l'APK (autoriser les sources inconnues).
 
-Le HTTP non chiffré n'est autorisé que pour ce profil de test (`app.config.ts`).
+Le HTTP non chiffré n'est autorisé que si l'URL de l'API du build commence par `http://` (`app.config.ts`) ; avec l'API en ligne (HTTPS), il est refusé.
 
 ## Version Windows (.exe) à partager
 `MyMarathon.exe` est une application autonome : elle contient le serveur, l'interface web et une base SQLite. Rien à installer, aucun serveur à héberger.
@@ -110,6 +110,18 @@ Le fichier produit est `desktop/dist/MyMarathon.exe` (≈ 35 Mo) : c'est lui qu'
 - pas de synchronisation entre PC ni avec le téléphone ;
 - l'app s'ouvre dans sa propre fenêtre (moteur Edge WebView2, présent sur Windows 10/11) ; fermer la fenêtre arrête l'app. Sans WebView2, elle s'ouvre dans le navigateur.
 
-## Mise en production (à préparer)
-- Backend : `DEBUG=False`, une vraie `SECRET_KEY`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `DATABASE_URL=postgres://…`, puis `python manage.py migrate`, `python manage.py collectstatic` et `gunicorn config.wsgi` derrière un proxy HTTPS.
-- App : définir l'URL HTTPS de l'API dans le profil `production` de `app/eas.json` (actuellement un emplacement réservé) puis `npx eas-cli build --platform android --profile production` (AAB pour le Play Store).
+## Mise en ligne (Render + Neon, gratuit)
+Un seul service Render sert l'API **et** la version web (même adresse, pas de CORS) ; la base est un PostgreSQL Neon.
+- `Dockerfile` (racine) : export web Expo (`EXPO_PUBLIC_API_URL=/`), puis Django + `gunicorn` ; `collectstatic` au build, `migrate` à chaque démarrage. Fichiers statiques servis par WhiteNoise.
+- `render.yaml` (Blueprint) : service gratuit, région Frankfurt, `SECRET_KEY` générée par Render, `DATABASE_URL` à coller, contrôle de santé `/api/health/`. L'adresse publique Render (`RENDER_EXTERNAL_HOSTNAME`) est ajoutée automatiquement à `ALLOWED_HOSTS` / `CSRF_TRUSTED_ORIGINS`.
+
+Première mise en ligne :
+1. **Neon** (neon.tech) : créer un projet (région Europe), copier la chaîne de connexion (`postgresql://…?sslmode=require`) ;
+2. **Render** (render.com, connexion avec GitHub) : **New → Blueprint**, choisir le dépôt `MyMarathon`, coller la chaîne Neon dans `DATABASE_URL`, **Apply** ;
+3. après le déploiement : ouvrir `https://<service>.onrender.com` (version web) ; mettre cette adresse dans le profil `preview` de `app/eas.json` et reconstruire l'APK.
+
+Ensuite, chaque push sur `main` redéploie automatiquement. Offre gratuite : le service s'endort après ~15 min sans visite (premier chargement 30 à 60 s).
+
+## Mise en production sur un autre hébergeur
+- Backend : `DEBUG=False`, une vraie `SECRET_KEY`, `ALLOWED_HOSTS`, `DATABASE_URL=postgres://…`, `STATIC_MANIFEST=True`, puis `python manage.py migrate`, `python manage.py collectstatic` et `gunicorn config.wsgi` derrière un proxy HTTPS (ou l'image `Dockerfile`).
+- App : URL HTTPS de l'API dans `app/eas.json` ; le profil `production` produit un AAB pour le Play Store.

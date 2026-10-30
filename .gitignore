@@ -22,3 +22,4 @@ desktop/build/
 desktop/dist/
 desktop/build.log
 app/dist-desktop/
+app/dist-web/

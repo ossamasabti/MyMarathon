@@ -1,0 +1,25 @@
+# Render Blueprint: one free web service built from the Dockerfile (API + web app).
+# The database is a Neon PostgreSQL: paste its connection string as DATABASE_URL when asked.
+services:
+  - type: web
+    name: mymarathon
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health/
+    autoDeploy: true
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: DEBUG
+        value: "False"
+      # HTTPS is always on at Render: browsers may remember it for a year.
+      - key: SECURE_HSTS_SECONDS
+        value: "31536000"
+      - key: JWT_ACCESS_MINUTES
+        value: "15"
+      - key: JWT_REFRESH_DAYS
+        value: "30"

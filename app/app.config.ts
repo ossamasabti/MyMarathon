@@ -1,11 +1,11 @@
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 /**
- * Expo config. Dynamic only for one thing: the `preview` EAS profile (test APK) talks to the
- * development backend over plain HTTP on the local network, which Android blocks by default.
- * Cleartext traffic is therefore allowed for that profile only, never for production builds.
+ * Expo config. Dynamic only for one thing: an APK pointed at a development backend over plain
+ * HTTP on the local network needs cleartext traffic, which Android blocks by default. It is
+ * allowed only when the API URL of the build is http://, never for the hosted HTTPS API.
  */
-const allowCleartext = process.env.EAS_BUILD_PROFILE === 'preview';
+const allowCleartext = (process.env.EXPO_PUBLIC_API_URL ?? '').startsWith('http://');
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
