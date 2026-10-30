@@ -110,7 +110,20 @@ Le fichier produit est `desktop/dist/MyMarathon.exe` (≈ 35 Mo) : c'est lui qu'
 - pas de synchronisation entre PC ni avec le téléphone ;
 - l'app s'ouvre dans sa propre fenêtre (moteur Edge WebView2, présent sur Windows 10/11) ; fermer la fenêtre arrête l'app. Sans WebView2, elle s'ouvre dans le navigateur.
 
-## Mise en ligne (Render + Neon, gratuit)
+## Mise en ligne (PythonAnywhere, gratuit sans carte)
+Un seul site `https://<utilisateur>.pythonanywhere.com` sert l'API **et** la version web (même adresse, pas de CORS) ; base SQLite chez PythonAnywhere.
+- `deploy/publish-web.ps1` (sur le PC, PowerShell) : export web Expo (`EXPO_PUBLIC_API_URL=/`) poussé sur la branche `web-build` (un seul commit, forcé). L'offre gratuite n'a ni la place ni le Node nécessaires pour construire l'export.
+- `deploy/pythonanywhere/update.sh` (console Bash de PythonAnywhere) : `git pull` du code, récupération de `web-build`, virtualenv `~/.virtualenvs/mymarathon`, `backend/.env` généré une fois (`SECRET_KEY` aléatoire, `DEBUG=False`, hôte, `FRONTEND_DIR`, `STATIC_MANIFEST`), `migrate`, `collectstatic`, fichier WSGI réécrit puis rechargement.
+
+Première mise en ligne :
+1. PC : `powershell -ExecutionPolicy Bypass -File deploy/publish-web.ps1` ;
+2. pythonanywhere.com : compte gratuit (« Beginner ») ; onglet **Web** → **Add a new web app** → **Manual configuration** → **Python 3.13** ; champ **Virtualenv** : `/home/<utilisateur>/.virtualenvs/mymarathon` ; **Force HTTPS** activé ;
+3. onglet **Consoles** → **Bash** : `git clone https://github.com/ossamasabti/MyMarathon.git` puis `bash ~/MyMarathon/deploy/pythonanywhere/update.sh` ;
+4. mettre l'adresse dans le profil `preview` de `app/eas.json` et reconstruire l'APK.
+
+Mise à jour : `publish-web.ps1` si l'app a changé, push sur `main`, puis `update.sh` dans la console. Offre gratuite : cliquer sur **Run until 3 months from today** (onglet Web) au moins tous les 3 mois.
+
+## Mise en ligne alternative (Render + Neon, carte bancaire demandée)
 Un seul service Render sert l'API **et** la version web (même adresse, pas de CORS) ; la base est un PostgreSQL Neon.
 - `Dockerfile` (racine) : export web Expo (`EXPO_PUBLIC_API_URL=/`), puis Django + `gunicorn` ; `collectstatic` au build, `migrate` à chaque démarrage. Fichiers statiques servis par WhiteNoise.
 - `render.yaml` (Blueprint) : service gratuit, région Frankfurt, `SECRET_KEY` générée par Render, `DATABASE_URL` à coller, contrôle de santé `/api/health/`. L'adresse publique Render (`RENDER_EXTERNAL_HOSTNAME`) est ajoutée automatiquement à `ALLOWED_HOSTS` / `CSRF_TRUSTED_ORIGINS`.
