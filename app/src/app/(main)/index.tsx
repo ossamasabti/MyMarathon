@@ -2,6 +2,7 @@ import { useTodayHabits } from '@/api/habits';
 import { useTodayTasks } from '@/api/tasks';
 import type { Task } from '@/api/types';
 import { AppText } from '@/components/AppText';
+import { FocusTodayCard } from '@/components/focus/FocusTodayCard';
 import { HabitRow } from '@/components/HabitRow';
 import { QuickAddTask } from '@/components/QuickAddTask';
 import { Screen } from '@/components/Screen';
@@ -18,6 +19,8 @@ export default function TodayScreen() {
 
   return (
     <Screen title={fr.nav.today}>
+      <FocusTodayCard />
+
       <Section>
         <QuickAddTask plannedDate={todayISO()} placeholder={fr.task.quickAddPlaceholder} />
       </Section>

@@ -143,6 +143,13 @@ class FocusSession(models.Model):
     # Focused time, pauses excluded.
     duration_seconds = models.PositiveIntegerField("durée (s)")
     planned_minutes = models.PositiveIntegerField("durée visée (min)", null=True, blank=True)
+    # The precise outcome aimed for, set before starting.
+    intention = models.CharField("intention", max_length=200, blank=True)
+    # Self-assessed focus quality (1-5), given in the end-of-session review.
+    quality = models.PositiveSmallIntegerField("qualité", null=True, blank=True)
+    distractions = models.PositiveSmallIntegerField("distractions", default=0)
+    # Thoughts jotted down during the session to deal with later (list of strings).
+    captured_notes = models.JSONField("pensées notées", default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

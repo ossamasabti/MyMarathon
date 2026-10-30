@@ -1,3 +1,7 @@
+from datetime import timedelta, tzinfo
+from datetime import timezone as dt_timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
 from django.db.models import Case, F, IntegerField, Q, Value, When
 from django.utils import timezone
 from django_filters import rest_framework as filters
@@ -8,6 +12,7 @@ from rest_framework.response import Response
 
 from core.mixins import OwnedQuerysetMixin
 
+from .focus_stats import build_focus_overview
 from .habits import is_due
 from .models import Domain, FocusSession, Goal, Habit, HabitLog, Priority, Review, ReviewType, Task, TaskStatus
 from .periods import period_bounds
@@ -211,6 +216,35 @@ class FocusSessionViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
     queryset = FocusSession.objects.select_related("task")
     serializer_class = FocusSessionSerializer
     filterset_class = FocusSessionFilter
+
+    @action(detail=False)
+    def overview(self, request: Request) -> Response:
+        """Daily goal, streaks, records, charts and badges, in the time zone given by `?tz=`."""
+        return Response(build_focus_overview(request.user, user_timezone(request), timezone.now()))
+
+
+MAX_UTC_OFFSET_MINUTES = 14 * 60
+
+
+def user_timezone(request: Request) -> tzinfo:
+    """Zone of the device: IANA name (`?tz=Europe/Paris`) checked against its current offset.
+
+    `?offset=` is the device's UTC offset right now, in minutes. When the server's time zone
+    data disagrees with it (outdated or newer rules on either side), the device's clock wins.
+    """
+    try:
+        zone: tzinfo = ZoneInfo(request.query_params.get("tz", ""))
+    except (ZoneInfoNotFoundError, ValueError):
+        zone = timezone.get_current_timezone()
+    try:
+        offset = timedelta(minutes=int(request.query_params["offset"]))
+    except (KeyError, ValueError):
+        return zone
+    if abs(offset) > timedelta(minutes=MAX_UTC_OFFSET_MINUTES):
+        return zone
+    if timezone.now().astimezone(zone).utcoffset() != offset:
+        return dt_timezone(offset)
+    return zone
 
 
 class StatsQuerySerializer(serializers.Serializer):

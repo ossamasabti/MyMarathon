@@ -16,6 +16,7 @@ export const queryKeys = {
   reviews: (params: Record<string, string> = {}) => ['reviews', params] as const,
   reviewSummary: (type: string, start: string) => ['reviews', 'summary', type, start] as const,
   focusSessions: (params: Record<string, string | number> = {}) => ['focus', params] as const,
+  focusOverview: (zone: string) => ['focus', 'overview', zone] as const,
 };
 
 /** Goals, tasks, habits, progress and review summaries depend on each other: refresh them together after any write. */

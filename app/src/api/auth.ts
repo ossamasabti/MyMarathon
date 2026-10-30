@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { cancelAllReminders } from '@/lib/notifications';
 import { useAuthStore } from '@/stores/authStore';
 import { useFocusStore } from '@/stores/focusStore';
+import { usePrefsStore } from '@/stores/prefsStore';
 
 import { apiRequest } from './client';
 import type { AuthResponse, TokenPair, User } from './types';
@@ -28,9 +29,13 @@ export function useMe() {
 export function useUpdateMe() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: Pick<User, 'display_name'>) =>
+    mutationFn: (input: Partial<Pick<User, 'display_name' | 'focus_goal_minutes'>>) =>
       apiRequest<User>('/api/auth/me/', { method: 'PATCH', body: input }),
-    onSuccess: (user) => queryClient.setQueryData(meQueryKey, user),
+    onSuccess: (user) => {
+      queryClient.setQueryData(meQueryKey, user);
+      // The daily goal drives the focus streak.
+      void queryClient.invalidateQueries({ queryKey: ['focus', 'overview'] });
+    },
   });
 }
 
@@ -72,6 +77,7 @@ export function useLogout() {
       // Reminders belong to the account that scheduled them.
       await cancelAllReminders().catch(() => undefined);
       useFocusStore.getState().clear();
+      usePrefsStore.getState().resetCelebrations();
       await useAuthStore.getState().signOut();
       queryClient.clear();
     },

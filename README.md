@@ -59,12 +59,16 @@ npx expo lint
 npx expo export --platform web
 ```
 
-## Concentration (chrono et minuteur)
+## Concentration (méthodes, objectif quotidien, trophées)
 - Dans le détail d'une tâche : **heure de début / fin** (créneau sur la date planifiée) et bouton **Se concentrer sur cette tâche** ; l'écran **Concentration** (menu) permet aussi une session libre.
 - **Chrono** (le temps monte) ou **minuteur** (25, 45, 60 min ou durée libre). Pause, reprise, fin ; la session continue si tu changes d'écran ou recharges la page.
 - Fin du minuteur : signal sonore sur PC / web (fenêtre ouverte), notification et vibration sur téléphone.
 - Bouton ▶ sur chaque tâche : lance le chrono sur cette tâche (elle passe « En cours »).
 - **Chaque minute** de concentration est ajoutée automatiquement au **temps passé** de la tâche (affiché sur la ligne de la tâche, cumulé sur toutes les sessions) et à la tuile « Concentration (30 jours) » ; si l'app se ferme, les minutes déjà comptées restent. Une session de moins d'une minute n'est pas comptée ; « Abandonner » retire les minutes de la session.
+- **Méthodes** : Pomodoro (25/5, pause longue de 15 min après 4 cycles), Cycles longs (50/10), Deep work (90/20), Minuteur, Chrono libre. À la fin d'un cycle, la pause démarre seule (compte à rebours, conseil de récupération), puis « Lancer le cycle suivant » ; option **Enchaîner les cycles automatiquement** dans Réglages.
+- **Intention et bilan** : avant de démarrer, le résultat visé ; pendant, le bouton **Distraction** note une pensée pour plus tard ; à la fin (ou pendant la pause), note de qualité 1 à 5, nombre de distractions et pensées à transformer en tâches.
+- **Objectif quotidien et série** : carte « Concentration du jour » sur Aujourd'hui (objectif modifiable, 2 h par défaut), série de jours où l'objectif est atteint, célébration une fois par jour.
+- **Progrès** : records et 14 trophées sur l'écran Concentration ; dans Statistiques, calendrier de 12 semaines, meilleures heures et temps par domaine (30 jours).
 
 ## Rappels (notifications locales)
 Dans **Réglages → Rappels** (application mobile uniquement) :

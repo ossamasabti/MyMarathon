@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router/js-tabs';
 
 import { AppTabBar } from '@/components/AppTabBar';
 import { FocusBanner } from '@/components/FocusBanner';
+import { FocusCelebrations } from '@/components/focus/FocusCelebrations';
 import { NotificationsSync } from '@/components/NotificationsSync';
 import { useAuthStore } from '@/stores/authStore';
 import { useIsWide, useTheme } from '@/theme/useTheme';
@@ -36,6 +37,7 @@ export default function MainLayout() {
         <Tabs.Screen name="tasks" />
       </Tabs>
       <FocusBanner />
+      <FocusCelebrations />
     </>
   );
 }

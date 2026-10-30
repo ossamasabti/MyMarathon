@@ -2,6 +2,8 @@ export interface User {
   id: number;
   email: string;
   display_name: string;
+  /** Daily focus goal, used for the focus streak. */
+  focus_goal_minutes: number;
   date_joined: string;
 }
 
@@ -238,6 +240,11 @@ export interface FocusSession {
   /** Focused time, pauses excluded. */
   duration_seconds: number;
   planned_minutes: number | null;
+  intention: string;
+  /** Self-assessed focus quality, 1 to 5. */
+  quality: number | null;
+  distractions: number;
+  captured_notes: string[];
   created_at: string;
 }
 
@@ -248,4 +255,53 @@ export interface FocusSessionInput {
   ended_at: string;
   duration_seconds: number;
   planned_minutes: number | null;
+  intention: string;
+  distractions: number;
+  captured_notes: string[];
+}
+
+export type FocusBadgeKey =
+  | 'first_session'
+  | 'hours_1'
+  | 'hours_10'
+  | 'hours_50'
+  | 'hours_100'
+  | 'streak_3'
+  | 'streak_7'
+  | 'streak_30'
+  | 'streak_100'
+  | 'timers_10'
+  | 'timers_50'
+  | 'deep_work'
+  | 'top_quality_10'
+  | 'early_bird';
+
+export interface FocusBadge {
+  key: FocusBadgeKey;
+  unlocked: boolean;
+  progress: number;
+  target: number;
+}
+
+/** GET /api/focus-sessions/overview/: days counted in the device's time zone. */
+export interface FocusOverview {
+  today: ISODate;
+  today_seconds: number;
+  goal_minutes: number;
+  /** Consecutive days reaching the goal (today not reached yet does not break it). */
+  streak: number;
+  best_streak: number;
+  records: {
+    best_day: { date: ISODate; seconds: number } | null;
+    longest_session_seconds: number;
+    total_seconds: number;
+    sessions: number;
+  };
+  /** Seconds per day, from a Monday 11 weeks ago to today. */
+  heatmap: { date: ISODate; seconds: number }[];
+  /** Seconds per clock hour (0-23) over the last 30 days. */
+  by_hour: number[];
+  by_domain: { domain: { id: number; name: string; color: string; icon: string } | null; seconds: number }[];
+  quality_avg_30d: number | null;
+  badges: FocusBadge[];
 }

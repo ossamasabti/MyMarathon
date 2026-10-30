@@ -15,10 +15,14 @@ function refresh(queryClient: QueryClient) {
   return Promise.all([queryClient.invalidateQueries({ queryKey: ['focus'] }), invalidatePlanning(queryClient)]);
 }
 
-/** Whether the server copy is behind: each new whole minute while running, any change once paused or stopped. */
+/**
+ * Whether the server copy is behind: a new distraction, each new whole minute while running,
+ * any change once paused or stopped.
+ */
 function needsSave(session: ActiveFocusSession, seconds: number): boolean {
   if (seconds < MIN_COUNTED_SECONDS) return false;
   const synced = session.syncedSeconds ?? 0;
+  if (session.distractions !== session.syncedDistractions) return true;
   const running = session.pausedAt === null && session.endedAt === null;
   return running ? Math.floor(seconds / 60) > Math.floor(synced / 60) : seconds !== synced;
 }
@@ -38,17 +42,26 @@ async function save(queryClient: QueryClient): Promise<void> {
     ended_at: new Date(session.endedAt ?? session.pausedAt ?? now).toISOString(),
     duration_seconds: seconds,
     planned_minutes: session.plannedMinutes,
+    intention: session.intention,
+    distractions: session.distractions,
+    captured_notes: session.capturedNotes,
   };
   try {
     const saved =
       session.serverId == null
         ? await apiRequest<FocusSession>('/api/focus-sessions/', { method: 'POST', body })
         : await apiRequest<FocusSession>(`/api/focus-sessions/${session.serverId}/`, { method: 'PATCH', body });
-    useFocusStore.getState().markSynced(session.startedAt, saved.id, seconds);
+    useFocusStore.getState().markSynced(session.startedAt, saved.id, seconds, session.distractions);
     await refresh(queryClient);
   } catch {
     useFocusStore.getState().setSyncError(true);
   }
+}
+
+/** Whether everything the ended session counts is on the server (nothing to save under a minute). */
+export function isFocusSaved(session: ActiveFocusSession): boolean {
+  const seconds = focusedSeconds(session, session.endedAt ?? Date.now());
+  return !needsSave(session, seconds);
 }
 
 /** Save the current session's progress if it is behind; safe to call often. */
@@ -70,4 +83,10 @@ export function discardFocus(queryClient: QueryClient): Promise<void> {
   // A failed delete must not block later saves.
   queue = run.catch(() => undefined);
   return run;
+}
+
+/** Save the review of a session already on the server (quality given at the end). */
+export async function rateFocusSession(queryClient: QueryClient, serverId: number, quality: number): Promise<void> {
+  await apiRequest<FocusSession>(`/api/focus-sessions/${serverId}/`, { method: 'PATCH', body: { quality } });
+  await queryClient.invalidateQueries({ queryKey: ['focus'] });
 }

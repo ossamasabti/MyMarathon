@@ -342,6 +342,8 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 # Clock drift allowed between the device that timed the session and the server.
 CLOCK_TOLERANCE = timedelta(minutes=5)
+MAX_CAPTURED_NOTES = 20
+MAX_NOTE_LENGTH = 200
 
 
 class FocusSessionSerializer(serializers.ModelSerializer):
@@ -359,9 +361,23 @@ class FocusSessionSerializer(serializers.ModelSerializer):
             "ended_at",
             "duration_seconds",
             "planned_minutes",
+            "intention",
+            "quality",
+            "distractions",
+            "captured_notes",
             "created_at",
         ]
         read_only_fields = ["created_at"]
+        extra_kwargs = {
+            "quality": {
+                "min_value": 1,
+                "max_value": 5,
+                "error_messages": {
+                    "min_value": "La note va de 1 à 5.",
+                    "max_value": "La note va de 1 à 5.",
+                },
+            },
+        }
 
     def get_task_title(self, session: FocusSession) -> str | None:
         return session.task.title if session.task_id else None
@@ -384,3 +400,12 @@ class FocusSessionSerializer(serializers.ModelSerializer):
         if final_value(self, attrs, "mode") == FocusMode.TIMER and not final_value(self, attrs, "planned_minutes"):
             raise serializers.ValidationError({"planned_minutes": "Indique la durée du minuteur."})
         return attrs
+
+    def validate_captured_notes(self, notes) -> list[str]:
+        if not isinstance(notes, list) or not all(isinstance(note, str) for note in notes):
+            raise serializers.ValidationError("Liste de pensées invalide.")
+        if len(notes) > MAX_CAPTURED_NOTES:
+            raise serializers.ValidationError(f"{MAX_CAPTURED_NOTES} pensées au maximum par session.")
+        if any(len(note) > MAX_NOTE_LENGTH for note in notes):
+            raise serializers.ValidationError(f"Une pensée fait au plus {MAX_NOTE_LENGTH} caractères.")
+        return [note.strip() for note in notes if note.strip()]

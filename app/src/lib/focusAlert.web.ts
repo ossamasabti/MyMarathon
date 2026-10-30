@@ -1,7 +1,7 @@
 // Web / desktop end-of-timer alert: no scheduled notifications in browsers, so a short chime
 // is played while the page is open (Web Audio, no sound file). Same API as focusAlert.ts.
 
-export async function scheduleFocusEnd(_at: number, _taskTitle: string | null): Promise<void> {}
+export async function scheduleFocusEnd(_at: number, _title: string, _body: string): Promise<void> {}
 
 export async function cancelFocusEnd(): Promise<void> {}
 

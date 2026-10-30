@@ -56,3 +56,8 @@ export function formatTimeOfDay(date: Date | string): string {
   const value = typeof date === 'string' ? new Date(date) : date;
   return `${String(value.getHours()).padStart(2, '0')}:${String(value.getMinutes()).padStart(2, '0')}`;
 }
+
+/** Focus totals: whole minutes, "0 min" rather than seconds below a minute. */
+export function formatFocusTotal(seconds: number): string {
+  return seconds < 60 ? '0 min' : formatDuration(seconds);
+}

@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 
@@ -29,6 +30,12 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     email = models.EmailField("adresse e-mail", unique=True)
     display_name = models.CharField("nom affiché", max_length=80, blank=True)
+    # Daily focus goal, used for the focus streak.
+    focus_goal_minutes = models.PositiveSmallIntegerField(
+        "objectif de concentration (min/jour)",
+        default=120,
+        validators=[MinValueValidator(10), MaxValueValidator(720)],
+    )
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)

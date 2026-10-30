@@ -5,6 +5,7 @@ import { useStats } from '@/api/stats';
 import type { Stats } from '@/api/types';
 import { AppText } from '@/components/AppText';
 import { DomainDot, HorizonBadge } from '@/components/Badge';
+import { FocusStats } from '@/components/focus/FocusStats';
 import { ProgressBar } from '@/components/ProgressBar';
 import { Screen } from '@/components/Screen';
 import { Section } from '@/components/Section';
@@ -68,6 +69,8 @@ function StatsContent({ stats }: { stats: Stats }) {
         <AppText variant="small">{fr.screens.stats.weeklySubtitle}</AppText>
         <WeeklyColumns weeks={stats.weekly_tasks} />
       </Section>
+
+      <FocusStats />
 
       <Section title={fr.screens.stats.late}>
         {stats.late_goals.length === 0 ? (

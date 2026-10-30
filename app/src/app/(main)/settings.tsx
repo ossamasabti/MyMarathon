@@ -8,10 +8,12 @@ import { Button } from '@/components/Button';
 import { ChipSelect } from '@/components/ChipSelect';
 import { Screen } from '@/components/Screen';
 import { Section } from '@/components/Section';
+import { DailyGoalDialog } from '@/components/focus/DailyGoalDialog';
 import { ErrorState, LoadingState } from '@/components/States';
 import { TextField } from '@/components/TextField';
 import { fr } from '@/i18n/fr';
 import { notificationsSupported, requestPermission } from '@/lib/notifications';
+import { formatDuration } from '@/lib/time';
 import { usePrefsStore, type ThemePreference } from '@/stores/prefsStore';
 import { MIN_TOUCH, spacing } from '@/theme/colors';
 import { useTheme } from '@/theme/useTheme';
@@ -35,6 +37,7 @@ export default function SettingsScreen() {
       </Section>
 
       <ThemeSection />
+      {me.data ? <FocusSection goalMinutes={me.data.focus_goal_minutes} /> : null}
       <NotificationsSection />
 
       <Button
@@ -96,6 +99,30 @@ function ThemeSection() {
         value={preference}
         onChange={setTheme}
       />
+    </Section>
+  );
+}
+
+function FocusSection({ goalMinutes }: { goalMinutes: number }) {
+  const autoChain = usePrefsStore((s) => s.autoChainCycles);
+  const setAutoChain = usePrefsStore((s) => s.setAutoChainCycles);
+  const [editing, setEditing] = useState(false);
+  return (
+    <Section title={fr.focus.title}>
+      <View style={styles.goalRow}>
+        <View style={styles.flex}>
+          <AppText>{fr.focus.goalTitle}</AppText>
+          <AppText variant="small">{fr.focus.goalValue(formatDuration(goalMinutes * 60))}</AppText>
+        </View>
+        <Button label={fr.common.edit} variant="secondary" onPress={() => setEditing(true)} />
+      </View>
+      <ToggleRow
+        label={fr.focus.autoChain}
+        hint={fr.focus.autoChainHint}
+        value={autoChain}
+        onChange={setAutoChain}
+      />
+      <DailyGoalDialog visible={editing} goalMinutes={goalMinutes} onClose={() => setEditing(false)} />
     </Section>
   );
 }
@@ -189,4 +216,5 @@ const styles = StyleSheet.create({
   group: { gap: spacing.sm },
   toggleRow: { minHeight: MIN_TOUCH + 12, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   flex: { flex: 1, gap: 2 },
+  goalRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
 });

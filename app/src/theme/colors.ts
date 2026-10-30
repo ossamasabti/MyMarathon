@@ -60,3 +60,12 @@ export const chartColors = {
   light: { past: '#86B6EF', current: '#2A78D6', grid: '#E4E8EE' },
   dark: { past: '#1C5CAB', current: '#3987E5', grid: '#2A313C' },
 } as const;
+
+/**
+ * Focus calendar: one blue ramp, from "a little" to "daily goal reached" (validated with the
+ * dataviz palette script against the light and dark surfaces). Empty days use surfaceAlt.
+ */
+export const heatmapColors = {
+  light: ['#86B6EF', '#5598E7', '#256ABF', '#104281'],
+  dark: ['#184F95', '#2A78D6', '#5598E7', '#9EC5F4'],
+} as const;
