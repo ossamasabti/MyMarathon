@@ -417,6 +417,28 @@ export const fr = {
     notFound: 'Domaine introuvable.',
     deleteWarning: 'Les objectifs de ce domaine seront conservés, sans domaine.',
   },
+  template: {
+    fromTemplate: 'Partir d’un modèle',
+    phdTitle: 'Parcours doctoral',
+    phdIntro:
+      'Crée en une fois l’arbre de ta thèse : vision, années, trimestres, premiers mois, premières tâches et habitudes de recherche. Tout reste modifiable ensuite.',
+    thesisTitle: 'Titre de la thèse',
+    startDate: 'Début de la thèse',
+    duration: 'Durée',
+    years: (count: number) => `${count} ans`,
+    domainName: 'Nom du domaine',
+    defaultDomain: 'Doctorat',
+    preview: 'Aperçu',
+    previewHint: 'Renseigne le titre et la date de début pour voir l’aperçu.',
+    counts: (goals: number, tasks: number, habits: number) =>
+      `${goals} objectifs · ${tasks} tâches · ${habits} habitudes`,
+    tasks: 'Tâches',
+    habits: 'Habitudes',
+    daily: 'quotidienne',
+    weekly: 'hebdomadaire',
+    target: (value: string, unit: string) => `Indicateur : 0 / ${value} ${unit}`,
+    create: 'Créer mon parcours',
+  },
   screens: {
     today: {
       empty: 'Aucune tâche pour aujourd’hui. Profite de la course !',

@@ -47,6 +47,7 @@ export default function GoalTreeScreen() {
       </Section>
 
       <View style={styles.actions}>
+        <Button label={fr.template.fromTemplate} variant="ghost" onPress={() => router.push('/goals/template-phd')} />
         <Button label={`+ ${fr.goal.add}`} onPress={() => router.push('/goals/new')} />
       </View>
 
@@ -55,7 +56,10 @@ export default function GoalTreeScreen() {
       ) : tree.isError ? (
         <ErrorState message={tree.error.message} onRetry={() => tree.refetch()} />
       ) : tree.data.length === 0 ? (
-        <EmptyState message={fr.screens.goals.empty} hint={fr.screens.goals.emptyHint} />
+        <View style={styles.empty}>
+          <EmptyState message={fr.screens.goals.empty} hint={fr.screens.goals.emptyHint} />
+          <Button label={fr.template.phdTitle} variant="secondary" onPress={() => router.push('/goals/template-phd')} />
+        </View>
       ) : (
         <GoalTree nodes={tree.data} />
       )}
@@ -74,5 +78,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  actions: { flexDirection: 'row', justifyContent: 'flex-end' },
+  actions: { flexDirection: 'row', justifyContent: 'flex-end', flexWrap: 'wrap', gap: spacing.sm },
+  empty: { alignItems: 'center', gap: spacing.sm },
 });

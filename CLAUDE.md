@@ -10,7 +10,7 @@ backend/   Django 5.2 + DRF, API REST sous /api/, JWT (simplejwt), argon2
   core/      briques partagées : OwnedQuerysetMixin (filtrage par utilisateur), health check
   accounts/  User personnalisé (identifiant = e-mail), inscription, profil, logout
   goals/     Domain, Goal, Task, Habit, HabitLog, Review, FocusSession : models, rules.py (hiérarchie, progression, retard),
-             habits.py (échéance, série, taux), periods.py, review_summary.py, stats.py, serializers, viewsets, tests/
+             habits.py (échéance, série, taux), templates.py (modèles), periods.py, review_summary.py, stats.py, serializers, viewsets, tests/
 app/       Expo SDK 58 + React Native + TypeScript strict, Expo Router
   src/app/          routes (fichier = écran). (auth) = connexion/inscription, (main) = app connectée
   src/api/          client.ts (fetch + refresh JWT automatique), hooks TanStack Query par ressource
@@ -87,6 +87,7 @@ desktop/   version Windows (MyMarathon.exe) = fenêtre sur le site en ligne : la
 - `GET /api/goals/tree/?domain=` : arbre imbriqué avec progression, retard et tâches par nœud.
 - `GET /api/tasks/today/` : `{overdue, today, done}`.
 - Tâches : filtres `due_after` / `due_before` (rappels).
+- Modèle « Parcours doctoral » (`goals/templates.py`) : `build_phd_plan(start, years, title)` pur (vision → 3 ou 4 années → 4 trimestres chacune → 3 premiers mois, 7 tâches du 1er trimestre, 3 habitudes), dates enfant ⊂ parent via `add_months` (fin = début + N mois − 1 jour) ; `apply_plan` crée domaine + arbre en transaction (chaque objectif repasse par `validate_goal`, domaine en double → 400 `domain_name`, rien n'est créé). `GET /api/templates/phd/?start_date=&years=&thesis_title=` = aperçu, `POST` (+ `domain_name`) = création → `{domain_id, vision_id, counts}`. Front : `(main)/goals/template-phd.tsx` (formulaire + aperçu repliable, titre envoyé après 400 ms de pause), entrée « Partir d'un modèle » sur Objectifs.
 - `/api/habits/` (filtre `goal`) + `GET today/`, `POST {id}/check/` `{date?, done}` (date future refusée), `GET {id}/logs/?from=&to=` ; `/api/reviews/` (filtres `type`, `period_start`) + `GET summary/?type=&period_start=`.
 - Un goal renvoie `progress`, `is_late`, `ancestors`, `children_count`, `task_counts` ; une tâche renvoie `goal_path` (vision → objectif direct) et `domain`.
 - Les FK (`parent`, `domain`, `goal`) n'acceptent que des objets de l'utilisateur (`OwnedPrimaryKeyRelatedField`) → 400 sinon.

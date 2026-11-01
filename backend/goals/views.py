@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from django.db.models import Case, F, IntegerField, Q, Value, When
 from django.utils import timezone
 from django_filters import rest_framework as filters
-from rest_framework import serializers, viewsets
+from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action, api_view
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -19,6 +19,7 @@ from .periods import period_bounds
 from .review_summary import build_summary
 from .rules import is_late
 from .stats import build_stats
+from .templates import PHD_YEARS, apply_plan, build_phd_plan, plan_counts
 from .serializers import (
     DomainSerializer,
     FocusSessionSerializer,
@@ -257,3 +258,25 @@ def stats(request: Request) -> Response:
     params = StatsQuerySerializer(data=request.query_params)
     params.is_valid(raise_exception=True)
     return Response(build_stats(request.user, timezone.localdate(), params.validated_data["weeks"]))
+
+
+class PhdTemplateSerializer(serializers.Serializer):
+    start_date = serializers.DateField()
+    years = serializers.ChoiceField(choices=PHD_YEARS, default=3)
+    thesis_title = serializers.CharField(max_length=200)
+    domain_name = serializers.CharField(max_length=60, default="Doctorat")
+
+
+@api_view(["GET", "POST"])
+def phd_template(request: Request) -> Response:
+    """GET: preview of the PhD plan (nothing saved). POST: create it for the requesting user."""
+    params = PhdTemplateSerializer(data=request.query_params if request.method == "GET" else request.data)
+    params.is_valid(raise_exception=True)
+    data = params.validated_data
+    plan = build_phd_plan(data["start_date"], data["years"], data["thesis_title"])
+    if request.method == "GET":
+        return Response({"plan": plan.as_dict(), "counts": plan_counts(plan)})
+    domain, vision = apply_plan(request.user, plan, data["domain_name"])
+    return Response(
+        {"domain_id": domain.id, "vision_id": vision.id, "counts": plan_counts(plan)}, status=status.HTTP_201_CREATED
+    )

@@ -32,6 +32,7 @@ Une seule application pour le **web**, **Android** et **Windows**.
 - **Progression calculée automatiquement** (sous-objectifs, tâches faites, indicateur chiffré) et alerte quand un objectif **prend du retard**.
 - Tâches avec date, priorité, durée estimée et **créneau horaire**.
 - Vues **Aujourd'hui**, **Semaine** (planification jour par jour) et **Timeline** annuelle.
+- **Modèle « Parcours doctoral »** : l'arbre complet d'une thèse de 3 ou 4 ans (vision, années, trimestres, premiers mois, premières tâches et habitudes de recherche) créé en un clic, avec aperçu.
 
 ### 🧠 Concentration
 - Méthodes **Pomodoro** (25/5), **cycles longs** (50/10) et **deep work** (90/20), minuteur ou chrono libre.

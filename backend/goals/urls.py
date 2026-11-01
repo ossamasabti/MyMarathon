@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from .views import DomainViewSet, FocusSessionViewSet, GoalViewSet, HabitViewSet, ReviewViewSet, TaskViewSet, stats
+from .views import DomainViewSet, FocusSessionViewSet, GoalViewSet, HabitViewSet, ReviewViewSet, TaskViewSet, phd_template, stats
 
 router = DefaultRouter()
 router.register("domains", DomainViewSet, basename="domain")
@@ -11,4 +11,8 @@ router.register("habits", HabitViewSet, basename="habit")
 router.register("reviews", ReviewViewSet, basename="review")
 router.register("focus-sessions", FocusSessionViewSet, basename="focus-session")
 
-urlpatterns = [path("stats/", stats, name="stats"), *router.urls]
+urlpatterns = [
+    path("stats/", stats, name="stats"),
+    path("templates/phd/", phd_template, name="phd-template"),
+    *router.urls,
+]
