@@ -14,7 +14,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://192.168.1.31:8000"
+        "EXPO_PUBLIC_API_URL": "https://ossamasabti.pythonanywhere.com"
       }
     },
     "production": {
@@ -23,7 +23,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.example.invalid"
+        "EXPO_PUBLIC_API_URL": "https://ossamasabti.pythonanywhere.com"
       }
     }
   },

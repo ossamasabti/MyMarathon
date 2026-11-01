@@ -87,11 +87,12 @@ npx serve dist --single      # test local du build (application d'une seule page
 Le dossier `app/dist/` se dépose sur n'importe quel hébergement statique ; toutes les routes doivent renvoyer `index.html`. Ajoute l'origine du site à `CORS_ALLOWED_ORIGINS` côté backend.
 
 ## APK Android de test (EAS)
-Le profil `preview` (`app/eas.json`) produit un APK qui parle au backend de ton PC sur le Wi-Fi (`http://192.168.1.31:8000` ; modifie l'adresse si l'IP du PC change) :
+Le profil `preview` (`app/eas.json`) produit un APK qui parle au site en ligne `https://ossamasabti.pythonanywhere.com` (Wi-Fi ou 4G, PC éteint) :
 1. `cd app && npx eas-cli login` (compte Expo gratuit), puis `npx eas-cli init` la première fois ;
 2. `npx eas-cli build --platform android --profile preview` : le build se fait dans le cloud Expo et donne un lien de téléchargement de l'APK ;
-3. sur le PC : `ALLOWED_HOSTS` contient l'IP du PC (`backend/.env`), le backend tourne avec `runserver 0.0.0.0:8000`, et le pare-feu Windows autorise Python sur les réseaux privés ;
-4. sur le téléphone (même Wi-Fi) : installer l'APK (autoriser les sources inconnues).
+3. sur le téléphone : installer l'APK (autoriser les sources inconnues).
+
+Pour un APK vers le backend du PC (même Wi-Fi), mettre `http://<IP du PC>:8000` dans le profil, l'IP dans `ALLOWED_HOSTS` et lancer `runserver 0.0.0.0:8000` (la box ne doit pas isoler les appareils Wi-Fi).
 
 Le HTTP non chiffré n'est autorisé que si l'URL de l'API du build commence par `http://` (`app.config.ts`) ; avec l'API en ligne (HTTPS), il est refusé.
 
