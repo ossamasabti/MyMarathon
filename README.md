@@ -34,6 +34,12 @@ Une seule application pour le **web**, **Android** et **Windows**.
 - Vues **Aujourd'hui**, **Semaine** (planification jour par jour) et **Timeline** annuelle.
 - **Modèle « Parcours doctoral »** : l'arbre complet d'une thèse de 3 ou 4 ans (vision, années, trimestres, premiers mois, premières tâches et habitudes de recherche) créé en un clic, avec aperçu.
 
+### 📚 Bibliographie
+- Une **fiche par article** : ajout en un clic avec le **DOI** (titre, auteurs, année, revue remplis automatiquement).
+- Statut **À lire / En cours / Lu**, mots-clés, recherche, lien vers un objectif (« 60 articles » avance tout seul).
+- **Fiche de lecture** guidée : résumé, contribution, méthode, limites, idées pour la thèse.
+- **Export BibTeX** pour LaTeX / Overleaf, avec clés de citation (`\cite{cortes1995supportvector}`).
+
 ### 🧠 Concentration
 - Méthodes **Pomodoro** (25/5), **cycles longs** (50/10) et **deep work** (90/20), minuteur ou chrono libre.
 - Pauses guidées entre les cycles, enchaînement automatique possible.

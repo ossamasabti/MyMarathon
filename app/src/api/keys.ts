@@ -17,12 +17,18 @@ export const queryKeys = {
   reviewSummary: (type: string, start: string) => ['reviews', 'summary', type, start] as const,
   focusSessions: (params: Record<string, string | number> = {}) => ['focus', params] as const,
   focusOverview: (zone: string) => ['focus', 'overview', zone] as const,
+  references: (params: Record<string, string | number> = {}) => ['references', params] as const,
+  reference: (id: number) => ['reference', id] as const,
+  referenceTags: ['references', 'tags'] as const,
 };
 
-/** Goals, tasks, habits, progress and review summaries depend on each other: refresh them together after any write. */
+/**
+ * Goals, tasks, habits, references, progress and review summaries depend on each other
+ * (a read reference moves an "articles" indicator): refresh them together after any write.
+ */
 export function invalidatePlanning(queryClient: QueryClient) {
   return Promise.all(
-    ['goals', 'goal', 'tree', 'tasks', 'task', 'habits', 'habit', 'reviews'].map((key) => queryClient.invalidateQueries({ queryKey: [key] })),
+    ['goals', 'goal', 'tree', 'tasks', 'task', 'habits', 'habit', 'reviews', 'references', 'reference'].map((key) => queryClient.invalidateQueries({ queryKey: [key] })),
   );
 }
 

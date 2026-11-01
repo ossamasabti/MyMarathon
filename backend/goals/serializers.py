@@ -6,7 +6,8 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from . import habits as habits_rules
-from .models import Domain, FocusMode, FocusSession, Frequency, Goal, Habit, HabitLog, Review, Task
+from .bibliography import make_citation_key, normalize_doi
+from .models import Domain, FocusMode, FocusSession, Frequency, Goal, Habit, HabitLog, Reference, Review, Task
 from .periods import period_bounds
 from .rules import GoalShape, ProgressIndex, is_late, validate_goal
 
@@ -409,3 +410,89 @@ class FocusSessionSerializer(serializers.ModelSerializer):
         if any(len(note) > MAX_NOTE_LENGTH for note in notes):
             raise serializers.ValidationError(f"Une pensée fait au plus {MAX_NOTE_LENGTH} caractères.")
         return [note.strip() for note in notes if note.strip()]
+
+
+# --- Bibliography -------------------------------------------------------------
+
+READING_NOTE_KEYS = {"summary", "contribution", "method", "limits", "ideas"}
+MAX_TAGS = 20
+MAX_TAG_LENGTH = 40
+
+
+class ReferenceSerializer(serializers.ModelSerializer):
+    goal = OwnedPrimaryKeyRelatedField(queryset=Goal.objects.all(), allow_null=True, required=False)
+    goal_ref = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Reference
+        fields = [
+            "id",
+            "goal",
+            "goal_ref",
+            "kind",
+            "title",
+            "authors",
+            "year",
+            "venue",
+            "doi",
+            "url",
+            "status",
+            "read_at",
+            "tags",
+            "notes",
+            "citation_key",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["read_at", "citation_key", "created_at", "updated_at"]
+
+    def get_goal_ref(self, ref: Reference) -> dict | None:
+        return goal_ref(ref.goal) if ref.goal_id else None
+
+    def validate_year(self, value: int | None) -> int | None:
+        if value is not None and not 1400 <= value <= timezone.localdate().year + 1:
+            raise serializers.ValidationError("Année invalide.")
+        return value
+
+    def validate_doi(self, value: str) -> str:
+        doi = normalize_doi(value)
+        if doi and not doi.startswith("10."):
+            raise serializers.ValidationError("Un DOI commence par « 10. » (ex. 10.1007/BF00994018).")
+        duplicates = Reference.objects.filter(user=self.context["request"].user, doi=doi)
+        if self.instance is not None:
+            duplicates = duplicates.exclude(pk=self.instance.pk)
+        if doi and duplicates.exists():
+            raise serializers.ValidationError("Cet article est déjà dans ta bibliographie.")
+        return doi
+
+    def validate_tags(self, value) -> list[str]:
+        if not isinstance(value, list) or not all(isinstance(t, str) for t in value):
+            raise serializers.ValidationError("Les mots-clés doivent être une liste de textes.")
+        tags: list[str] = []
+        for tag in (t.strip() for t in value):
+            if tag and tag.lower() not in {t.lower() for t in tags}:
+                tags.append(tag)
+        if len(tags) > MAX_TAGS or any(len(t) > MAX_TAG_LENGTH for t in tags):
+            raise serializers.ValidationError(
+                f"Au plus {MAX_TAGS} mots-clés de {MAX_TAG_LENGTH} caractères chacun."
+            )
+        return tags
+
+    def validate_notes(self, value) -> dict:
+        if not isinstance(value, dict) or not all(
+            k in READING_NOTE_KEYS and isinstance(v, str) for k, v in value.items()
+        ):
+            raise serializers.ValidationError("Fiche de lecture invalide.")
+        if any(len(v) > MAX_ANSWER_LENGTH for v in value.values()):
+            raise serializers.ValidationError(f"Chaque réponse est limitée à {MAX_ANSWER_LENGTH} caractères.")
+        return value
+
+    def create(self, validated_data: dict) -> Reference:
+        user = validated_data["user"]
+        validated_data["citation_key"] = make_citation_key(
+            validated_data.get("authors", ""),
+            validated_data.get("year"),
+            validated_data["title"],
+            Reference.objects.filter(user=user).values_list("citation_key", flat=True),
+        )
+        return super().create(validated_data)

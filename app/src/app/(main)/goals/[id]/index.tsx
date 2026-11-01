@@ -6,6 +6,7 @@ import { ApiError } from '@/api/client';
 import { useDomains } from '@/api/domains';
 import { useDeleteGoal, useGoal, useGoals, useSaveGoal } from '@/api/goals';
 import { useHabits, useSaveHabit } from '@/api/habits';
+import { useReferences } from '@/api/references';
 import { useTasks } from '@/api/tasks';
 import type { Goal, GoalStatus } from '@/api/types';
 import { AppText } from '@/components/AppText';
@@ -19,6 +20,7 @@ import { IconButton } from '@/components/IconButton';
 import { ProgressBar } from '@/components/ProgressBar';
 import { QuickAddTask } from '@/components/QuickAddTask';
 import { Screen } from '@/components/Screen';
+import { ReferenceRow } from '@/components/ReferenceRow';
 import { Section } from '@/components/Section';
 import { EmptyState, ErrorState, LoadingState } from '@/components/States';
 import { TaskRow } from '@/components/TaskRow';
@@ -67,6 +69,7 @@ function GoalDetail({ goal }: { goal: Goal }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [addingHabit, setAddingHabit] = useState(false);
   const habits = useHabits({ goal: goal.id });
+  const references = useReferences({ goal: goal.id });
   const saveHabit = useSaveHabit();
   const [current, setCurrent] = useState(formatDecimal(goal.current_value));
 
@@ -237,6 +240,22 @@ function GoalDetail({ goal }: { goal: Goal }) {
           habits.data.map((habit) => <HabitRow key={habit.id} habit={habit} hideGoal />)
         )}
       </Section>
+
+      {references.data && references.data.length > 0 ? (
+        <Section
+          title={fr.reference.goalSection(references.data.length)}
+          right={
+            <Button
+              label={`+ ${fr.reference.add}`}
+              variant="ghost"
+              onPress={() => router.push({ pathname: '/references/new', params: { goal: String(goal.id) } })}
+            />
+          }>
+          {references.data.map((reference) => (
+            <ReferenceRow key={reference.id} reference={reference} />
+          ))}
+        </Section>
+      ) : null}
 
       <Dialog visible={addingHabit} title={fr.habit.newTitle} onClose={() => setAddingHabit(false)}>
         <ScrollView>

@@ -305,3 +305,33 @@ export interface FocusOverview {
   quality_avg_30d: number | null;
   badges: FocusBadge[];
 }
+
+export type ReferenceKind = 'article' | 'conference' | 'book' | 'thesis' | 'preprint' | 'other';
+export type ReadingStatus = 'to_read' | 'reading' | 'read';
+export type ReadingNoteKey = 'summary' | 'contribution' | 'method' | 'limits' | 'ideas';
+
+export interface Reference {
+  id: number;
+  goal: number | null;
+  goal_ref: { id: number; title: string; horizon: Horizon } | null;
+  kind: ReferenceKind;
+  title: string;
+  /** "Last, First; Last, First". */
+  authors: string;
+  year: number | null;
+  venue: string;
+  doi: string;
+  url: string;
+  status: ReadingStatus;
+  read_at: string | null;
+  tags: string[];
+  notes: Partial<Record<ReadingNoteKey, string>>;
+  citation_key: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ReferenceInput = Pick<
+  Reference,
+  'goal' | 'kind' | 'title' | 'authors' | 'year' | 'venue' | 'doi' | 'url' | 'status' | 'tags' | 'notes'
+>;

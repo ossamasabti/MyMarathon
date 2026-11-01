@@ -12,7 +12,7 @@ import { AppText } from './AppText';
 interface HeaderProps {
   title: string;
   /** Where "back" goes when there is no history (e.g. after a page reload on the web). */
-  fallbackHref?: '/' | '/goals';
+  fallbackHref?: '/' | '/goals' | '/references';
   right?: ReactNode;
 }
 

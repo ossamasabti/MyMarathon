@@ -135,6 +135,8 @@ def open_window(data: Path) -> bool:
     try:
         import webview
 
+        # Files saved by the site (e.g. the BibTeX export) go to the Downloads folder.
+        webview.settings["ALLOW_DOWNLOADS"] = True
         size = {"width": 1280, "height": 820, "min_size": (900, 600)}
         if site_is_reachable():
             webview.create_window(APP_NAME, SITE_URL, **size)

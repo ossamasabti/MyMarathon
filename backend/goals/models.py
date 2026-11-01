@@ -221,3 +221,61 @@ class Review(models.Model):
 
     def __str__(self) -> str:
         return f"{self.get_type_display()} {self.period_start}"
+
+
+class ReferenceKind(models.TextChoices):
+    ARTICLE = "article", "Article de revue"
+    CONFERENCE = "conference", "Article de conférence"
+    BOOK = "book", "Livre"
+    THESIS = "thesis", "Thèse"
+    PREPRINT = "preprint", "Prépublication"
+    OTHER = "other", "Autre"
+
+
+class ReadingStatus(models.TextChoices):
+    TO_READ = "to_read", "À lire"
+    READING = "reading", "En cours"
+    READ = "read", "Lu"
+
+
+class Reference(models.Model):
+    """A bibliography entry (paper, book…) with its reading notes."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="references")
+    goal = models.ForeignKey(Goal, on_delete=models.SET_NULL, null=True, blank=True, related_name="references")
+    kind = models.CharField("type", max_length=12, choices=ReferenceKind.choices, default=ReferenceKind.ARTICLE)
+    title = models.CharField("titre", max_length=300)
+    # "Last, First; Last, First" (BibTeX order, separated by semicolons).
+    authors = models.CharField("auteurs", max_length=1000, blank=True)
+    year = models.PositiveSmallIntegerField("année", null=True, blank=True)
+    venue = models.CharField("revue / conférence", max_length=300, blank=True)
+    doi = models.CharField("DOI", max_length=200, blank=True)
+    url = models.URLField("lien", max_length=500, blank=True)
+    status = models.CharField("statut", max_length=10, choices=ReadingStatus.choices, default=ReadingStatus.TO_READ)
+    read_at = models.DateTimeField("lu le", null=True, blank=True)
+    tags = models.JSONField("mots-clés", default=list, blank=True)
+    # Reading notes: stable keys (summary, contribution, method, limits, ideas) -> text.
+    notes = models.JSONField("fiche de lecture", default=dict, blank=True)
+    citation_key = models.CharField("clé de citation", max_length=80)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "référence"
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(fields=["user", "citation_key"], name="unique_citation_key_per_user"),
+            models.UniqueConstraint(
+                fields=["user", "doi"], condition=~models.Q(doi=""), name="unique_doi_per_user"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return self.title
+
+    def save(self, *args, **kwargs):
+        if self.status == ReadingStatus.READ and self.read_at is None:
+            self.read_at = timezone.now()
+        elif self.status != ReadingStatus.READ:
+            self.read_at = None
+        super().save(*args, **kwargs)

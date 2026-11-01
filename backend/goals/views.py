@@ -12,9 +12,22 @@ from rest_framework.response import Response
 
 from core.mixins import OwnedQuerysetMixin
 
+from .bibliography import sync_goal_indicator, to_bibtex
 from .focus_stats import build_focus_overview
 from .habits import is_due
-from .models import Domain, FocusSession, Goal, Habit, HabitLog, Priority, Review, ReviewType, Task, TaskStatus
+from .models import (
+    Domain,
+    FocusSession,
+    Goal,
+    Habit,
+    HabitLog,
+    Priority,
+    Reference,
+    Review,
+    ReviewType,
+    Task,
+    TaskStatus,
+)
 from .periods import period_bounds
 from .review_summary import build_summary
 from .rules import is_late
@@ -26,6 +39,7 @@ from .serializers import (
     GoalSerializer,
     HabitCheckSerializer,
     HabitSerializer,
+    ReferenceSerializer,
     ReviewSerializer,
     TaskSerializer,
     domain_ref,
@@ -222,6 +236,68 @@ class FocusSessionViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
     def overview(self, request: Request) -> Response:
         """Daily goal, streaks, records, charts and badges, in the time zone given by `?tz=`."""
         return Response(build_focus_overview(request.user, user_timezone(request), timezone.now()))
+
+
+class ReferenceFilter(filters.FilterSet):
+    class Meta:
+        model = Reference
+        fields = ["status", "goal", "kind"]
+
+
+class ReferenceViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
+    queryset = Reference.objects.select_related("goal")
+    serializer_class = ReferenceSerializer
+    filterset_class = ReferenceFilter
+
+    def filter_queryset(self, queryset):
+        queryset = super().filter_queryset(queryset)
+        # Tags live in a JSON list: matched in Python (SQLite has no JSON "contains"), on small per-user lists.
+        tag = self.request.query_params.get("tag", "").strip().lower()
+        needle = self.request.query_params.get("q", "").strip().lower()
+        if not tag and not needle:
+            return queryset
+
+        def keep(ref: Reference) -> bool:
+            tags = [t.lower() for t in ref.tags]
+            if tag and tag not in tags:
+                return False
+            haystack = " ".join([ref.title, ref.authors, ref.venue, ref.doi, *tags]).lower()
+            return not needle or all(word in haystack for word in needle.split())
+
+        return queryset.filter(id__in=[ref.id for ref in queryset if keep(ref)])
+
+    def perform_create(self, serializer):
+        super().perform_create(serializer)
+        sync_goal_indicator(serializer.instance.goal)
+
+    def perform_update(self, serializer):
+        previous_goal = serializer.instance.goal
+        super().perform_update(serializer)
+        sync_goal_indicator(serializer.instance.goal)
+        if previous_goal is not None and previous_goal.id != serializer.instance.goal_id:
+            sync_goal_indicator(previous_goal)
+
+    def perform_destroy(self, instance):
+        goal = instance.goal
+        super().perform_destroy(instance)
+        sync_goal_indicator(goal)
+
+    @action(detail=False)
+    def tags(self, request: Request) -> Response:
+        """The user's keywords with how many references use each, most used first."""
+        counts: dict[str, list] = {}
+        for tags in self.get_queryset().values_list("tags", flat=True):
+            for tag in tags:
+                entry = counts.setdefault(tag.lower(), [tag, 0])
+                entry[1] += 1
+        ordered = sorted(counts.values(), key=lambda e: (-e[1], e[0].lower()))
+        return Response([{"tag": tag, "count": count} for tag, count in ordered])
+
+    @action(detail=False)
+    def export(self, request: Request) -> Response:
+        """BibTeX of the references matching the same filters as the list."""
+        references = self.filter_queryset(self.get_queryset()).order_by("citation_key")
+        return Response({"count": len(references), "bibtex": to_bibtex(references)})
 
 
 MAX_UTC_OFFSET_MINUTES = 14 * 60
