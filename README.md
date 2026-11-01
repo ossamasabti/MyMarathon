@@ -55,9 +55,9 @@ Une seule application pour le **web**, **Android** et **Windows**.
 |---|---|
 | 🌐 **Web** (PC, tablette, téléphone) | [ossamasabti.pythonanywhere.com](https://ossamasabti.pythonanywhere.com) : crée ton compte, rien à installer |
 | 🤖 **Android** | APK construit avec EAS (voir [APK Android](#apk-android-eas)), connecté au même compte que le site |
-| 🪟 **Windows** | `MyMarathon.exe` autonome, données locales (voir [Version Windows](#version-windows-exe)) |
+| 🪟 **Windows** | `MyMarathon.exe` : l'application dans sa propre fenêtre (voir [Version Windows](#version-windows-exe)) |
 
-Le site et l'application Android partagent les mêmes données. La version Windows fonctionne hors ligne avec sa propre base.
+Le site, l'application Android et la version Windows partagent le même compte et les mêmes données.
 
 ## Technologies
 | Partie | Outils |
@@ -70,7 +70,7 @@ Le site et l'application Android partagent les mêmes données. La version Windo
 ```
 backend/   API REST Django (/api/) : comptes, objectifs, tâches, habitudes, revues, concentration, statistiques
 app/       application Expo (web, Android, iOS) en TypeScript
-desktop/   version Windows autonome (.exe)
+desktop/   version Windows (.exe), fenêtre sur le site en ligne
 deploy/    scripts de mise en ligne (PythonAnywhere)
 ```
 
@@ -143,19 +143,13 @@ Le profil `preview` (`app/eas.json`) produit un APK connecté au site en ligne `
 Pour un APK vers le backend du PC (même Wi-Fi), mettre `http://<IP du PC>:8000` dans le profil, l'IP dans `ALLOWED_HOSTS` et lancer `runserver 0.0.0.0:8000`. Le HTTP non chiffré n'est autorisé que si l'URL de l'API du build commence par `http://` (`app.config.ts`).
 
 ## Version Windows (.exe)
-`MyMarathon.exe` est une application autonome : serveur, interface et base SQLite dans un seul fichier, rien à installer.
+`MyMarathon.exe` ouvre l'application en ligne dans sa propre fenêtre Windows (Edge WebView2, présent sur Windows 10/11) : même compte et mêmes données que le site et le téléphone, toujours à jour sans le reconstruire. Il faut une connexion Internet ; sans elle, une page « Pas de connexion » réessaie toute seule.
 
-Construire (Windows 64 bits, Python 3.13 et Node.js installés) :
+Construire (Windows 64 bits, Python 3.13) :
 ```powershell
 powershell -ExecutionPolicy Bypass -File desktop/build.ps1
 ```
-Résultat : `desktop/dist/MyMarathon.exe` (≈ 35 Mo).
-
-Pour les personnes qui le reçoivent :
-- au premier lancement, Windows SmartScreen affiche « Windows a protégé votre ordinateur » (fichier non signé) : **Informations complémentaires → Exécuter quand même** ;
-- chacun crée son compte au premier lancement ; les données restent sur le PC, dans `%APPDATA%\MyMarathon`, et survivent à une nouvelle version du `.exe` ;
-- pas de synchronisation avec le site ni avec le téléphone ;
-- l'app s'ouvre dans sa propre fenêtre (Edge WebView2, présent sur Windows 10/11), sinon dans le navigateur.
+Résultat : `desktop/dist/MyMarathon.exe` (≈ 12 Mo). Au premier lancement chez quelqu'un d'autre, Windows SmartScreen peut afficher « Windows a protégé votre ordinateur » (fichier non signé) : **Informations complémentaires → Exécuter quand même**.
 
 ## Mise en ligne (PythonAnywhere, gratuit sans carte)
 Un seul site `https://<utilisateur>.pythonanywhere.com` sert l'API **et** la version web (même adresse, pas de CORS) ; base SQLite chez PythonAnywhere.

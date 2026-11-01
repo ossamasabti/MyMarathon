@@ -1,35 +1,37 @@
 """MyMarathon desktop launcher (Windows .exe).
 
-Runs the Django backend on 127.0.0.1 with a per-user SQLite database, serves the exported
-web app from the same origin, and shows it in a native window (Edge WebView2 via pywebview).
+Shows the online app (same account and data as the website and the Android app) in a native
+window (Edge WebView2 via pywebview). Without a connection, a local page explains it and retries.
 Falls back to the default browser when no native window can be created.
 """
 
 from __future__ import annotations
 
+import base64
 import logging
 import os
-import secrets
-import socket
+import ssl
 import sys
-import threading
 import urllib.request
 import webbrowser
 from pathlib import Path
 
+import certifi
+
 APP_NAME = "MyMarathon"
-HOST = "127.0.0.1"
-# Fixed port: the web app keeps its session and preferences in localStorage, which is per origin.
-PREFERRED_PORT = 8765
+# MYMARATHON_URL points the window at another server (e.g. http://localhost:8081 while developing).
+SITE_URL = os.environ.get("MYMARATHON_URL", "https://ossamasabti.pythonanywhere.com/")
+HEALTH_TIMEOUT_SECONDS = 10
+AUTO_RETRY_SECONDS = 20
 
 log = logging.getLogger("mymarathon")
 
 
 def bundle_dir() -> Path:
-    """Folder holding the backend code and the web build (PyInstaller temp dir once frozen)."""
+    """Folder holding the bundled files (PyInstaller temp dir once frozen)."""
     if getattr(sys, "frozen", False):
         return Path(getattr(sys, "_MEIPASS"))
-    return Path(__file__).resolve().parent.parent
+    return Path(__file__).resolve().parent.parent / "app" / "assets" / "images"
 
 
 def data_dir() -> Path:
@@ -53,81 +55,93 @@ def setup_logging(data: Path) -> None:
     )
 
 
-def secret_key(data: Path) -> str:
-    """One random key per installation, created on first launch."""
-    key_file = data / "secret_key"
-    if not key_file.exists():
-        key_file.write_text(secrets.token_urlsafe(50), encoding="utf-8")
-    return key_file.read_text(encoding="utf-8").strip()
-
-
-def configure_django(data: Path) -> None:
-    root = bundle_dir()
-    if not getattr(sys, "frozen", False):
-        sys.path.insert(0, str(root / "backend"))
-        frontend = root / "app" / "dist-desktop"
-    else:
-        frontend = root / "frontend"
-    if not (frontend / "index.html").is_file():
-        raise SystemExit(f"Web build not found in {frontend}: run desktop/build.ps1.")
-
-    # Real environment variables win over backend/.env, which is never bundled anyway.
-    os.environ.update(
-        {
-            "DJANGO_SETTINGS_MODULE": "config.settings",
-            "SECRET_KEY": secret_key(data),
-            "DEBUG": "False",
-            "SECURE_SSL_REDIRECT": "False",
-            "ALLOWED_HOSTS": f"{HOST},localhost",
-            "CORS_ALLOWED_ORIGINS": "",
-            "DATABASE_URL": f"sqlite:///{(data / 'db.sqlite3').as_posix()}",
-            "FRONTEND_DIR": str(frontend),
-        }
-    )
-
-    import django
-    from django.core.management import call_command
-
-    django.setup()
-    call_command("migrate", interactive=False, verbosity=0)
-
-
-def is_running(port: int) -> bool:
-    """True when another MyMarathon instance already answers on this port."""
+def site_is_reachable() -> bool:
+    # certifi's CA bundle: an outdated Windows certificate store must not make the site look offline
+    # (the window itself is Edge WebView2, which has its own up-to-date roots).
+    context = ssl.create_default_context(cafile=certifi.where())
+    url = f"{SITE_URL.rstrip('/')}/api/health/"
     try:
-        with urllib.request.urlopen(f"http://{HOST}:{port}/api/health/", timeout=1) as response:
+        with urllib.request.urlopen(url, timeout=HEALTH_TIMEOUT_SECONDS, context=context) as response:
             return response.status == 200
-    except OSError:
+    except OSError as error:
+        log.warning("Site unreachable: %s", error)
         return False
 
 
-def port_is_free(port: int) -> bool:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        return sock.connect_ex((HOST, port)) != 0
+def offline_page() -> str:
+    logo_file = bundle_dir() / "logo-small.png"
+    logo = base64.b64encode(logo_file.read_bytes()).decode() if logo_file.is_file() else ""
+    return f"""<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>{APP_NAME}</title>
+<style>
+  :root {{ --bg:#F7F8FA; --surface:#FFFFFF; --text:#14181F; --muted:#525B68; --border:#D5DAE1; --primary:#1F5FD1; --on-primary:#FFFFFF; }}
+  @media (prefers-color-scheme: dark) {{
+    :root {{ --bg:#0E1116; --surface:#171B22; --text:#EEF1F5; --muted:#A5AEBB; --border:#343C48; --primary:#7FAAF5; --on-primary:#0B1A33; }}
+  }}
+  body {{ margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+         background:var(--bg); color:var(--text); font-family:"Segoe UI",system-ui,sans-serif; }}
+  .card {{ max-width:420px; margin:16px; padding:32px; text-align:center; background:var(--surface);
+          border:1px solid var(--border); border-radius:16px; }}
+  img {{ width:72px; height:72px; border-radius:16px; }}
+  h1 {{ font-size:22px; margin:16px 0 8px; }}
+  p {{ color:var(--muted); line-height:1.5; margin:0 0 20px; }}
+  button {{ min-height:44px; padding:0 24px; border:0; border-radius:10px; font-size:16px; font-weight:600;
+           background:var(--primary); color:var(--on-primary); cursor:pointer; }}
+  button:disabled {{ opacity:.6; cursor:default; }}
+  #status {{ min-height:1.5em; margin:16px 0 0; font-size:14px; }}
+</style></head>
+<body><main class="card">
+  {f'<img src="data:image/png;base64,{logo}" alt="">' if logo else ''}
+  <h1>Pas de connexion</h1>
+  <p>MyMarathon a besoin d'Internet pour retrouver ton compte et tes données.
+     Vérifie ta connexion : l'application se rouvre toute seule dès qu'elle revient.</p>
+  <button id="retry" type="button">Réessayer</button>
+  <p id="status" role="status"></p>
+</main>
+<script>
+  const button = document.getElementById('retry');
+  const status = document.getElementById('status');
+  let busy = false;
+  async function retry(manual) {{
+    if (busy || !window.pywebview) return;
+    busy = true; button.disabled = true;
+    if (manual) status.textContent = 'Connexion en cours…';
+    const ok = await window.pywebview.api.retry();
+    if (!ok) status.textContent = manual ? 'Toujours pas de connexion. Nouvel essai automatique dans quelques secondes.' : status.textContent;
+    busy = false; button.disabled = false;
+  }}
+  button.addEventListener('click', () => retry(true));
+  setInterval(() => retry(false), {AUTO_RETRY_SECONDS * 1000});
+</script>
+</body></html>"""
 
 
-def free_port() -> int:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind((HOST, 0))
-        return sock.getsockname()[1]
+class OfflineApi:
+    """Called from the offline page: loads the site once it answers."""
+
+    def __init__(self) -> None:
+        self.window = None
+
+    def retry(self) -> bool:
+        if not site_is_reachable():
+            return False
+        if self.window is not None:
+            self.window.load_url(SITE_URL)
+        return True
 
 
-def start_server(port: int):
-    from django.core.wsgi import get_wsgi_application
-    from waitress import create_server
-
-    server = create_server(get_wsgi_application(), host=HOST, port=port, threads=8)
-    threading.Thread(target=server.run, daemon=True, name="waitress").start()
-    log.info("Server listening on http://%s:%s", HOST, port)
-    return server
-
-
-def open_window(url: str, data: Path) -> bool:
+def open_window(data: Path) -> bool:
     """Blocks until the window is closed. False if no native window could be created."""
     try:
         import webview
 
-        webview.create_window(APP_NAME, url, width=1280, height=820, min_size=(900, 600))
+        size = {"width": 1280, "height": 820, "min_size": (900, 600)}
+        if site_is_reachable():
+            webview.create_window(APP_NAME, SITE_URL, **size)
+        else:
+            api = OfflineApi()
+            api.window = webview.create_window(APP_NAME, html=offline_page(), js_api=api, **size)
+        # The session (refresh token) and preferences live in the WebView2 profile, kept between launches.
         webview.start(private_mode=False, storage_path=str(data / "webview"))
         return True
     except Exception:
@@ -138,24 +152,9 @@ def open_window(url: str, data: Path) -> bool:
 def main() -> None:
     data = data_dir()
     setup_logging(data)
-
-    if is_running(PREFERRED_PORT):
-        # Already open: show another window on the running instance.
-        url = f"http://{HOST}:{PREFERRED_PORT}/"
-        if not open_window(url, data):
-            webbrowser.open(url)
-        return
-
-    configure_django(data)
-    port = PREFERRED_PORT if port_is_free(PREFERRED_PORT) else free_port()
-    server = start_server(port)
-    url = f"http://{HOST}:{port}/"
-
-    if open_window(url, data):
-        server.close()
-        return
-    webbrowser.open(url)
-    threading.Event().wait()  # keep serving the browser tab until the process is ended
+    log.info("Opening %s", SITE_URL)
+    if not open_window(data):
+        webbrowser.open(SITE_URL)
 
 
 if __name__ == "__main__":

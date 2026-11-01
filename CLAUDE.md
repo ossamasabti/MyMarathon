@@ -27,8 +27,8 @@ app/       Expo SDK 58 + React Native + TypeScript strict, Expo Router
                     GoalPicker, GoalTree, GoalForm, DomainForm, MoveTaskDialog, Timeline, HabitRow, HabitForm,
                     HabitHistory, DayPicker, StatTile, WeeklyColumns, NotificationsSync, AppTabBar
   src/i18n/fr.ts    tous les textes de l'interface
-desktop/   version Windows autonome (MyMarathon.exe) : launcher.py, MyMarathon.spec (PyInstaller), build.ps1,
-           requirements.txt (backend + waitress, pywebview, pyinstaller ; venv séparé desktop/.venv)
+desktop/   version Windows (MyMarathon.exe) = fenêtre sur le site en ligne : launcher.py, MyMarathon.spec (PyInstaller),
+           build.ps1, requirements.txt (certifi, pywebview, pyinstaller ; venv séparé desktop/.venv)
 ```
 
 ### Authentification
@@ -77,10 +77,10 @@ desktop/   version Windows autonome (MyMarathon.exe) : launcher.py, MyMarathon.s
 - Hébergement alternatif (Render + Neon) : `Dockerfile` racine (étape Node : export web `EXPO_PUBLIC_API_URL=/` ; étape Python 3.13 : `collectstatic`, puis `migrate` + `gunicorn` sur `$PORT`), `.dockerignore`, `render.yaml` (Blueprint gratuit, `SECRET_KEY` générée, `DATABASE_URL` saisie dans Render). `RENDER_EXTERNAL_HOSTNAME` → `ALLOWED_HOSTS` + `CSRF_TRUSTED_ORIGINS`. WhiteNoise toujours dans le middleware, stockage compressé/haché seulement si `STATIC_MANIFEST=True` (image hébergée ; le `.exe` n'a pas de `collectstatic`). `/api/health/` exempté de la redirection HTTPS (contrôle de santé en HTTP). `CONN_MAX_AGE=60` + `CONN_HEALTH_CHECKS`. Docker absent du PC : tester par morceaux (export, `check --deploy`, `runserver` avec `DEBUG=False`). Tests : `core/tests/test_settings.py` (réglages chargés dans un sous-processus).
 
 ### Version bureau (.exe)
-- `desktop/launcher.py` : données dans `%APPDATA%\MyMarathon` (SQLite, `secret_key` générée au premier lancement, `mymarathon.log`), réglages passés par variables d'environnement (`DEBUG=False`, `SECURE_SSL_REDIRECT=False`, `FRONTEND_DIR`…) avant `django.setup()`, `migrate` à chaque lancement, `waitress` sur `127.0.0.1:8765` (port fixe : session et préférences sont dans le localStorage, propre à l'origine ; port libre au hasard si occupé), fenêtre `pywebview` avec `private_mode=False`, repli sur le navigateur.
-- Django sert l'export web quand `FRONTEND_DIR` est défini (`core.views.frontend` : fichier réel sinon `index.html`, pas de sortie du dossier) ; même origine que l'API, donc pas de CORS.
-- L'export bureau se fait avec `EXPO_PUBLIC_API_URL=/` (→ URL d'API vide, appels relatifs) dans `app/dist-desktop`. Le lancer depuis PowerShell (`build.ps1`) : Git Bash convertit `/` en chemin Windows.
-- PyInstaller : les modules chargés par nom (argon2, waitress, `whitenoise.middleware`) sont en `hiddenimports` ; `rest_framework_simplejwt` est aussi copié en `.py` (une migration lit son propre `__file__`). Après ajout d'une dépendance chargée dynamiquement, tester l'inscription dans le `.exe`.
+- `desktop/launcher.py` : fenêtre `pywebview` (Edge WebView2) sur `SITE_URL` (`https://ossamasabti.pythonanywhere.com/`, surchargeable par la variable `MYMARATHON_URL`) : mêmes compte et données que le site et l'APK, rien à reconstruire quand le site change. Session et préférences dans le profil WebView2 (`%APPDATA%\MyMarathon\webview`, `private_mode=False`), journal `mymarathon.log`.
+- Au lancement, `GET /api/health/` (contexte SSL `certifi` : le magasin de certificats Windows de ce PC est périmé, Python y voit un certificat expiré) ; sans réponse, page locale « Pas de connexion » (couleurs des tokens, clair/sombre) avec « Réessayer » + nouvel essai toutes les 20 s via `js_api` (`OfflineApi.retry` → `window.load_url`). Repli sur le navigateur si aucune fenêtre native.
+- Plus de backend embarqué (≈ 12 Mo). Les données de l'ancienne version locale restent dans `%APPDATA%\MyMarathon\db.sqlite3` (non transférées, choix de l'utilisateur).
+- Django sert toujours l'export web quand `FRONTEND_DIR` est défini (`core.views.frontend`) : utilisé par l'hébergement.
 
 ### API métier
 - `/api/domains/`, `/api/goals/` (filtres `domain`, `horizon`, `status`, `parent`, `root=true`, `active_from`/`active_to` = chevauchement d'une période), `/api/tasks/` (filtres `goal`, `status`, `planned_date`, `planned_after`, `planned_before`, `unplanned=true`, `domain`) : CRUD.
@@ -142,6 +142,6 @@ Version Windows (depuis la racine) : `powershell -ExecutionPolicy Bypass -File d
 - [x] Étape 3 : Semaine et Timeline
 - [x] Étape 4 : Habitudes et Revues guidées
 - [x] Étape 5 : Statistiques, notifications locales, configuration EAS (APK) et build web
-- [x] Version Windows autonome (.exe) à partager
+- [x] Version Windows (.exe) : d'abord autonome, puis fenêtre sur le site en ligne
 - [x] Créneaux horaires des tâches, sessions de concentration (chrono / minuteur) et temps passé
 - [x] Concentration avancée : méthodes Pomodoro, intention et bilan, objectif quotidien et série, statistiques et trophées

@@ -1,6 +1,5 @@
-# Desktop (.exe) build: the backend plus a local WSGI server, a native window and the bundler.
--r ../backend/requirements.txt
-waitress==3.0.2
+# Desktop (.exe) build: a native window on the online app, and the bundler.
+certifi==2026.10.23
 pywebview==5.4
 pyinstaller==6.16.0
 pillow==11.3.0
