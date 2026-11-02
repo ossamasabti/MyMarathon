@@ -7,6 +7,13 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
  */
 const allowCleartext = (process.env.EXPO_PUBLIC_API_URL ?? '').startsWith('http://');
 
+/**
+ * The preview APK is installed directly on phones: native code only for 64-bit ARM (every
+ * Android phone since ~2017) instead of 4 processor types, about 3x smaller. The Play Store
+ * bundle (production) keeps them all: the store already sends each phone only its own.
+ */
+const apkArchs = process.env.EAS_BUILD_PROFILE === 'preview' ? { buildArchs: ['arm64-v8a'] } : {};
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'MyMarathon',
@@ -45,7 +52,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
     'expo-secure-store',
     'expo-notifications',
-    ['expo-build-properties', { android: { usesCleartextTraffic: allowCleartext } }],
+    ['expo-build-properties', { android: { usesCleartextTraffic: allowCleartext, ...apkArchs } }],
   ],
   experiments: {
     typedRoutes: true,
