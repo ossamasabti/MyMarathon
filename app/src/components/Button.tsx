@@ -19,12 +19,12 @@ export function Button({ label, onPress, variant = 'primary', loading = false, d
   const inactive = disabled || loading;
   const background = {
     primary: 'transparent',
-    secondary: theme.primarySoft,
+    secondary: 'transparent',
     ghost: 'transparent',
     danger: theme.danger,
   }[variant];
   const foreground =
-    variant === 'primary' ? theme.onGradient : variant === 'danger' ? theme.onPrimary : theme.primary;
+    variant === 'primary' ? theme.onGradient : variant === 'danger' ? theme.onPrimary : variant === 'secondary' ? theme.text : theme.primary;
 
   return (
     <Pressable
@@ -36,10 +36,18 @@ export function Button({ label, onPress, variant = 'primary', loading = false, d
       style={({ pressed }) => [
         styles.base,
         variant === 'ghost' && styles.ghost,
+        variant === 'secondary' && [styles.outline, { borderColor: theme.text }],
+        variant === 'primary' && !inactive && {
+          shadowColor: theme.gradientEnd,
+          shadowOpacity: 0.3,
+          shadowRadius: 20,
+          shadowOffset: { width: 0, height: 8 },
+          elevation: 4,
+        },
         {
           backgroundColor: background,
           opacity: inactive ? 0.55 : 1,
-          transform: [{ scale: pressed && !inactive ? 0.97 : 1 }],
+          transform: [{ translateY: pressed && !inactive ? 1 : 0 }],
         },
       ]}>
       {variant === 'primary' ? (
@@ -47,7 +55,7 @@ export function Button({ label, onPress, variant = 'primary', loading = false, d
           colors={[theme.gradientStart, theme.gradientEnd]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
+          style={[StyleSheet.absoluteFill, styles.fill]}
         />
       ) : null}
       {loading ? (
@@ -67,8 +75,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
   },
   ghost: { paddingHorizontal: spacing.sm },
+  outline: { borderWidth: 2 },
+  // Rounded here, not with overflow: hidden, so the button keeps its shadow.
+  fill: { borderRadius: radius.pill },
   label: { fontSize: 16, textAlign: 'center' },
 });

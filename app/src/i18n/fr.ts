@@ -23,6 +23,7 @@ export const fr = {
     required: 'Ce champ est obligatoire.',
   },
   auth: {
+    eyebrow: 'Objectifs · Tâches · Concentration',
     loginTitle: 'Connexion',
     registerTitle: 'Créer un compte',
     email: 'Adresse e-mail',
@@ -495,11 +496,9 @@ export const fr = {
   },
   screens: {
     today: {
-      greeting: (hour: number, name: string) => {
-        const hello = hour < 5 ? 'Bonne nuit' : hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir';
-        return name ? `${hello}, ${name} 👋` : `${hello} 👋`;
-      },
-      tasksProgress: (done: number, total: number) => `${done} / ${total} tâche${total > 1 ? 's' : ''}`,
+      hello: (hour: number) => (hour < 5 ? 'Bonne nuit' : hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir'),
+      tasksDone: 'tâches faites',
+      dayProgressTitle: 'Ta journée',
       dayProgressLabel: (done: number, total: number) => `${done} tâches faites sur ${total} prévues aujourd’hui`,
       nothingPlanned: 'Rien de prévu : ajoute ta première tâche !',
       allDone: 'Journée bouclée ! 🏁',
@@ -518,6 +517,10 @@ export const fr = {
         'Une heure de concentration vaut mieux qu’une journée dispersée.',
       ],
       empty: 'Aucune tâche pour aujourd’hui. Profite de la course !',
+      tomorrowTitle: 'Planifier demain',
+      tomorrowPlaceholder: 'Une tâche pour demain…',
+      tomorrowEmpty: 'Rien de prévu pour demain.',
+      tomorrowHint: 'Prépare ta journée ce soir : tu démarreras demain sans réfléchir.',
       overdue: 'En retard',
       planned: 'Au programme',
       done: 'Terminées aujourd’hui',

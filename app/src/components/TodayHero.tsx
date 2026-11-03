@@ -6,14 +6,18 @@ import { useFocusOverview } from '@/api/focus';
 import { useTodayHabits } from '@/api/habits';
 import { useTodayTasks } from '@/api/tasks';
 import { fr } from '@/i18n/fr';
-import { capitalize } from '@/lib/calendar';
 import { todayISO } from '@/lib/dates';
 import { elevation, radius, spacing } from '@/theme/colors';
 import { useTheme } from '@/theme/useTheme';
 
 import { AppText } from './AppText';
+import { FloatingIcons } from './Decor';
 
-const longDate = new Intl.DateTimeFormat('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+const longDate = new Intl.DateTimeFormat('fr-FR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+});
 
 /** Same quote all day, a new one each day. */
 function quoteOfTheDay(iso: string): string {
@@ -23,7 +27,7 @@ function quoteOfTheDay(iso: string): string {
 }
 
 /**
- * Gradient card heading "Aujourd'hui": greeting, how much of the day is done, streak and habits.
+ * Navy band heading "Aujourd'hui": greeting, how much of the day is done, streak and habits.
  * Reads the queries the screen already makes (no extra request); each part hides until its data arrives.
  */
 export function TodayHero() {
@@ -44,22 +48,29 @@ export function TodayHero() {
 
   return (
     <LinearGradient
-      colors={[theme.gradientStart, theme.gradientEnd]}
+      colors={[theme.heroStart, theme.heroEnd]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={[styles.card, elevation(theme.shadow, 2)]}>
+      <FloatingIcons color={theme.onHero} opacity={0.08} />
+
       <View style={styles.top}>
-        <AppText variant="heading" color={theme.onGradient}>
-          {fr.screens.today.greeting(now.getHours(), name)}
+        <AppText variant="small" color={theme.heroHighlight} style={styles.eyebrow}>
+          {longDate.format(now)}
         </AppText>
-        <AppText variant="small" color={theme.onGradient} style={styles.date}>
-          {capitalize(longDate.format(now))}
+        <AppText variant="title" color={theme.onHero}>
+          {fr.screens.today.hello(now.getHours())}
+          {name ? (
+            <AppText variant="title" color={theme.heroHighlight} accessibilityRole="none">
+              {`, ${name}`}
+            </AppText>
+          ) : null}
         </AppText>
       </View>
 
       {tasks.data ? (
         total === 0 ? (
-          <AppText color={theme.onGradient} style={styles.headline}>
+          <AppText color={theme.onHeroMuted} style={styles.lead}>
             {fr.screens.today.nothingPlanned}
           </AppText>
         ) : (
@@ -69,11 +80,28 @@ export function TodayHero() {
             accessibilityRole="progressbar"
             accessibilityLabel={fr.screens.today.dayProgressLabel(done, total)}
             accessibilityValue={{ min: 0, max: total, now: done }}>
-            <AppText variant="display" color={theme.onGradient}>
-              {allDone ? fr.screens.today.allDone : fr.screens.today.tasksProgress(done, total)}
-            </AppText>
+            {allDone ? (
+              <AppText variant="display" color={theme.onHero}>
+                {fr.screens.today.allDone}
+              </AppText>
+            ) : (
+              <View style={styles.figureRow}>
+                <AppText variant="display" color={theme.onHero}>
+                  {`${done}`}
+                  <AppText variant="heading" color={theme.onHeroMuted} accessibilityRole="none">{` / ${total}`}</AppText>
+                </AppText>
+                <AppText color={theme.onHeroMuted} style={styles.figureLabel}>
+                  {fr.screens.today.tasksDone}
+                </AppText>
+              </View>
+            )}
             <View style={[styles.track, { backgroundColor: theme.onGradientSoft }]}>
-              <View style={[styles.fill, { width: `${(done / total) * 100}%`, backgroundColor: theme.onGradient }]} />
+              <LinearGradient
+                colors={[theme.gradientEnd, theme.heroHighlight]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.fill, { width: `${(done / total) * 100}%` }]}
+              />
             </View>
           </View>
         )
@@ -90,7 +118,7 @@ export function TodayHero() {
           ) : null}
           {habitsTotal > 0 ? (
             <View style={[styles.pill, { backgroundColor: theme.onGradientShade }]}>
-              <AppText variant="small" color={theme.onGradient} style={styles.pillText}>
+              <AppText variant="small" color={theme.onHero} style={styles.pillText}>
                 {fr.screens.today.habitsPill(habitsDone, habitsTotal)}
               </AppText>
             </View>
@@ -98,23 +126,47 @@ export function TodayHero() {
         </View>
       ) : null}
 
-      <AppText variant="small" color={theme.onGradient} style={styles.quote}>
-        {`« ${quoteOfTheDay(todayISO())} »`}
-      </AppText>
+      <View style={[styles.quote, { borderLeftColor: theme.heroHighlight }]}>
+        <AppText color={theme.onHero} style={styles.quoteText}>
+          {quoteOfTheDay(todayISO())}
+        </AppText>
+      </View>
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: radius.lg + 4, padding: spacing.lg, gap: spacing.md },
-  top: { gap: 2 },
-  date: { opacity: 0.95 },
-  headline: { fontSize: 20, lineHeight: 26, fontWeight: '700' },
+  card: {
+    borderRadius: radius.lg + 6,
+    padding: spacing.lg + 4,
+    gap: spacing.md + 4,
+    overflow: 'hidden',
+  },
+  top: { gap: spacing.xs },
+  eyebrow: {
+    textTransform: 'uppercase',
+    letterSpacing: 1.6,
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  lead: { fontSize: 17, lineHeight: 26, fontWeight: '500' },
   progress: { gap: spacing.sm },
+  figureRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.sm,
+    flexWrap: 'wrap',
+  },
+  figureLabel: { fontWeight: '500' },
   track: { height: 10, borderRadius: 5, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: 5 },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  pill: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.pill },
+  pill: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+  },
   pillText: { fontWeight: '700' },
-  quote: { fontStyle: 'italic', opacity: 0.95 },
+  quote: { borderLeftWidth: 3, paddingLeft: spacing.md },
+  quoteText: { fontSize: 17, lineHeight: 26, fontWeight: '600' },
 });

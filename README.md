@@ -28,14 +28,15 @@ Une seule application pour le **web**, **Android** et **Windows**.
 ## Fonctionnalités
 
 ### ✨ Une interface qui motive
-- Thème « Fraîcheur » : turquoise et vert, accent ambre pour les séries ; clair ou sombre.
-- **Aujourd'hui** s'ouvre sur une carte d'accueil : salutation, tâches faites sur prévues, série de concentration, habitudes et phrase du jour, jusqu'à « Journée bouclée ! 🏁 ».
+- Design bleu nuit et bleu ciel, police Poppins, accent jaune pour les séries ; clair ou sombre.
+- **Aujourd'hui** s'ouvre sur une bande bleu nuit : salutation, tâches faites sur prévues, série de concentration, habitudes et phrase du jour, jusqu'à « Journée bouclée ! 🏁 ».
 - Petites récompenses : coche qui rebondit (et vibre sur téléphone), couleur du domaine sur chaque tâche.
 
 ### 🎯 Objectifs et tâches
 - Objectifs par **domaine de vie** (santé, études, travail…), sur 4 horizons imbriqués.
 - **Progression calculée automatiquement** (sous-objectifs, tâches faites, indicateur chiffré) et alerte quand un objectif **prend du retard**.
 - Tâches avec date, priorité, durée estimée et **créneau horaire**.
+- **Planifier demain** depuis l'accueil : ajoute le soir les tâches du lendemain.
 - Vues **Aujourd'hui**, **Semaine** (planification jour par jour) et **Timeline** annuelle.
 - **Modèle « Parcours doctoral »** : l'arbre complet d'une thèse de 3 ou 4 ans (vision, années, trimestres, premiers mois, premières tâches et habitudes de recherche) créé en un clic, avec aperçu.
 

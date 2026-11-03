@@ -12,7 +12,7 @@ export function Badge({ label, color }: { label: string; color?: string }) {
   const theme = useTheme();
   return (
     <View style={[styles.badge, { borderColor: color ?? theme.primarySoft, backgroundColor: theme.primarySoft }]}>
-      <AppText variant="small" color={theme.text} style={styles.text}>
+      <AppText variant="small" color={theme.primary} style={styles.text}>
         {label}
       </AppText>
     </View>
@@ -31,7 +31,7 @@ export function DomainDot({ color, size = 10 }: { color: string; size?: number }
 
 const styles = StyleSheet.create({
   badge: {
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.sm + 2,
     paddingVertical: 2,
     borderRadius: radius.pill,
     borderWidth: 1,

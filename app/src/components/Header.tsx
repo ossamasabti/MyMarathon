@@ -8,6 +8,7 @@ import { MIN_TOUCH, spacing } from '@/theme/colors';
 import { useTheme } from '@/theme/useTheme';
 
 import { AppText } from './AppText';
+import { TitleBar } from './TitleBar';
 
 interface HeaderProps {
   title: string;
@@ -31,9 +32,12 @@ export function Header({ title, fallbackHref = '/', right }: HeaderProps) {
           <Ionicons name="chevron-back" size={22} color={theme.primary} />
         </View>
       </Pressable>
-      <AppText variant="title" style={styles.title} numberOfLines={2}>
-        {title}
-      </AppText>
+      <View style={styles.title}>
+        <AppText variant="title" numberOfLines={2}>
+          {title}
+        </AppText>
+        <TitleBar width={44} />
+      </View>
       {right ? <View style={styles.right}>{right}</View> : null}
     </View>
   );

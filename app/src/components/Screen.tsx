@@ -6,6 +6,8 @@ import { MAX_CONTENT_WIDTH, spacing } from '@/theme/colors';
 import { useTheme } from '@/theme/useTheme';
 
 import { AppText } from './AppText';
+import { Halos } from './Decor';
+import { TitleBar } from './TitleBar';
 
 interface ScreenProps {
   title?: string;
@@ -20,19 +22,26 @@ export function Screen({ title, children, scroll = true, fullWidth = false }: Sc
   const theme = useTheme();
   const content = (
     <View style={[styles.content, fullWidth && styles.fullWidth]}>
-      {title ? <AppText variant="title">{title}</AppText> : null}
+      {title ? (
+        <View style={styles.title}>
+          <AppText variant="title">{title}</AppText>
+          <TitleBar />
+        </View>
+      ) : null}
       {children}
     </View>
   );
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={[styles.root, { backgroundColor: theme.background }]}>
+      <Halos />
       {scroll ? <ScrollView contentContainerStyle={styles.scroll}>{content}</ScrollView> : content}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
+  root: { flex: 1, overflow: 'hidden' },
+  title: { marginBottom: spacing.xs },
   scroll: { flexGrow: 1 },
   content: {
     flexGrow: 1,

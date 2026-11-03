@@ -25,7 +25,7 @@ export function Section({ title, icon, right, children }: SectionProps) {
           <View style={styles.titleRow}>
             {icon ? (
               <View style={[styles.icon, { backgroundColor: theme.primarySoft }]}>
-                <Ionicons name={icon} size={18} color={theme.primary} />
+                <Ionicons name={icon} size={20} color={theme.primary} />
               </View>
             ) : null}
             {title ? (
@@ -43,9 +43,9 @@ export function Section({ title, icon, right, children }: SectionProps) {
 }
 
 const styles = StyleSheet.create({
-  card: { padding: spacing.md + 4, gap: spacing.sm, borderRadius: radius.lg },
+  card: { padding: spacing.lg, gap: spacing.sm, borderRadius: radius.lg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
-  titleRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  icon: { width: 32, height: 32, borderRadius: radius.sm + 2, alignItems: 'center', justifyContent: 'center' },
+  titleRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  icon: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
   title: { flexShrink: 1 },
 });
