@@ -48,13 +48,14 @@ function StatsContent({ stats }: { stats: Stats }) {
   return (
     <>
       <View style={styles.tiles}>
-        <StatTile label={fr.screens.stats.tasksDone30} value={String(totals.tasks_done_30d)} />
-        <StatTile label={fr.screens.stats.achieved} value={String(totals.goals_achieved)} />
+        <StatTile icon="checkmark-done" label={fr.screens.stats.tasksDone30} value={String(totals.tasks_done_30d)} />
+        <StatTile icon="flag" highlight label={fr.screens.stats.achieved} value={String(totals.goals_achieved)} />
         <StatTile
+          icon="repeat"
           label={fr.screens.stats.habitsRate}
           value={totals.habits_rate_30d === null ? '—' : `${percent(totals.habits_rate_30d)} %`}
         />
-        <StatTile label={fr.screens.stats.focus30} value={formatDuration(totals.focus_seconds_30d)} />
+        <StatTile icon="timer" label={fr.screens.stats.focus30} value={formatDuration(totals.focus_seconds_30d)} />
       </View>
 
       <Section title={fr.screens.stats.byDomain}>

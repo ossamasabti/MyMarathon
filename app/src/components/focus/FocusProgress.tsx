@@ -54,13 +54,14 @@ function ProgressContent({ overview }: { overview: FocusOverview }) {
   return (
     <>
       <View style={styles.tiles}>
-        <StatTile label={fr.focus.currentStreak} value={fr.focus.days(overview.streak)} />
-        <StatTile label={fr.focus.bestStreak} value={fr.focus.days(overview.best_streak)} />
+        <StatTile icon="flame" highlight label={fr.focus.currentStreak} value={fr.focus.days(overview.streak)} />
+        <StatTile icon="trophy" label={fr.focus.bestStreak} value={fr.focus.days(overview.best_streak)} />
         <StatTile
+          icon="star"
           label={fr.focus.bestDay}
           value={records.best_day ? formatFocusTotal(records.best_day.seconds) : '—'}
         />
-        <StatTile label={fr.focus.totalTime} value={formatFocusTotal(records.total_seconds)} />
+        <StatTile icon="hourglass" label={fr.focus.totalTime} value={formatFocusTotal(records.total_seconds)} />
       </View>
       <View style={styles.badgesHeader}>
         <AppText variant="heading" style={styles.flex}>

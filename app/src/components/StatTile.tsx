@@ -1,25 +1,49 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
+import type { ComponentProps } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { radius, spacing } from '@/theme/colors';
+import { elevation, radius, spacing } from '@/theme/colors';
 import { useTheme } from '@/theme/useTheme';
 
 import { AppText } from './AppText';
 
+interface StatTileProps {
+  label: string;
+  value: string;
+  icon?: ComponentProps<typeof Ionicons>['name'];
+  /** Amber highlight (streaks, records) instead of the brand teal. */
+  highlight?: boolean;
+}
+
 /** A single figure with its label (no chart needed for a headline number). */
-export function StatTile({ label, value }: { label: string; value: string }) {
+export function StatTile({ label, value, icon, highlight = false }: StatTileProps) {
   const theme = useTheme();
   return (
     <View
       accessible
       accessibilityLabel={`${label} : ${value}`}
-      style={[styles.tile, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-      <AppText variant="small">{label}</AppText>
-      <AppText style={styles.value}>{value}</AppText>
+      style={[styles.tile, { backgroundColor: theme.surface }, elevation(theme.shadow)]}>
+      <View style={styles.head}>
+        {icon ? (
+          <View style={[styles.icon, { backgroundColor: highlight ? theme.accent : theme.primarySoft }]}>
+            <Ionicons name={icon} size={16} color={highlight ? theme.onAccent : theme.primary} />
+          </View>
+        ) : null}
+        <AppText variant="small" style={styles.label}>
+          {label}
+        </AppText>
+      </View>
+      <AppText variant="display" style={styles.value}>
+        {value}
+      </AppText>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  tile: { flex: 1, minWidth: 150, padding: spacing.md, gap: spacing.xs, borderWidth: 1, borderRadius: radius.lg },
-  value: { fontSize: 32, lineHeight: 38, fontWeight: '600' },
+  tile: { flex: 1, minWidth: 150, padding: spacing.md, gap: spacing.sm, borderRadius: radius.lg },
+  head: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  icon: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  label: { flex: 1, fontWeight: '600' },
+  value: { fontSize: 32, lineHeight: 38 },
 });

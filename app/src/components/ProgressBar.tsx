@@ -1,3 +1,4 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, View } from 'react-native';
 
 import { fr } from '@/i18n/fr';
@@ -22,7 +23,7 @@ export function ProgressBar({ value, late = false, achieved = false, color, comp
   const theme = useTheme();
   const display = useDomainColor();
   const percent = Math.round(Math.max(0, Math.min(1, value)) * 100);
-  const fill = achieved ? theme.success : late ? theme.danger : color ? display(color) : theme.primary;
+  const fill = achieved ? theme.success : late ? theme.danger : color ? display(color) : null;
   const caption = achieved ? `\u{1F3C1} ${fr.progress.finished}` : fr.progress.distance(percent);
 
   return (
@@ -31,8 +32,18 @@ export function ProgressBar({ value, late = false, achieved = false, color, comp
       accessibilityRole="progressbar"
       accessibilityLabel={late ? `${caption}, ${fr.progress.late}` : caption}
       accessibilityValue={{ min: 0, max: 100, now: percent }}>
-      <View style={[styles.track, { backgroundColor: theme.surfaceAlt, borderColor: theme.border }]}>
-        <View style={[styles.fill, { width: `${percent}%`, backgroundColor: fill }]} />
+      <View style={[styles.track, { backgroundColor: theme.surfaceAlt }]}>
+        {fill ? (
+          <View style={[styles.fill, { width: `${percent}%`, backgroundColor: fill }]} />
+        ) : (
+          // No domain color: the brand gradient.
+          <LinearGradient
+            colors={[theme.gradientStart, theme.gradientEnd]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[styles.fill, { width: `${percent}%` }]}
+          />
+        )}
       </View>
       {compact ? null : (
         <View style={styles.captionRow}>
@@ -50,7 +61,7 @@ export function ProgressBar({ value, late = false, achieved = false, color, comp
 
 const styles = StyleSheet.create({
   container: { gap: spacing.xs },
-  track: { height: 8, borderRadius: 4, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth },
-  fill: { height: '100%', borderRadius: 4 },
+  track: { height: 10, borderRadius: 5, overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: 5 },
   captionRow: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
 });

@@ -11,7 +11,7 @@ import { IconButton } from '@/components/IconButton';
 import { ProgressBar } from '@/components/ProgressBar';
 import { fr } from '@/i18n/fr';
 import { formatFocusTotal } from '@/lib/time';
-import { radius, spacing } from '@/theme/colors';
+import { elevation, radius, spacing } from '@/theme/colors';
 import { useTheme } from '@/theme/useTheme';
 
 import { DailyGoalDialog } from './DailyGoalDialog';
@@ -34,9 +34,11 @@ function CardContent({ overview, showStart }: { overview: FocusOverview; showSta
   const reached = seconds >= goalSeconds;
 
   return (
-    <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+    <View style={[styles.card, { backgroundColor: theme.surface }, elevation(theme.shadow)]}>
       <View style={styles.header}>
-        <Ionicons name="flame" size={22} color={overview.streak > 0 ? theme.primary : theme.textMuted} />
+        <View style={[styles.flame, { backgroundColor: overview.streak > 0 ? theme.accent : theme.surfaceAlt }]}>
+          <Ionicons name="flame" size={18} color={overview.streak > 0 ? theme.onAccent : theme.textMuted} />
+        </View>
         <AppText variant="heading" style={styles.flex}>
           {fr.focus.todayTitle}
         </AppText>
@@ -57,7 +59,8 @@ function CardContent({ overview, showStart }: { overview: FocusOverview; showSta
 }
 
 const styles = StyleSheet.create({
-  card: { gap: spacing.sm, padding: spacing.md, borderWidth: 1, borderRadius: radius.lg },
+  card: { gap: spacing.sm, padding: spacing.md + 4, borderRadius: radius.lg },
+  flame: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   figure: { fontSize: 24, lineHeight: 30, fontWeight: '600', fontVariant: ['tabular-nums'] },
   flex: { flex: 1 },

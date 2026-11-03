@@ -27,7 +27,9 @@ export function Header({ title, fallbackHref = '/', right }: HeaderProps) {
         onPress={goBack}
         hitSlop={4}
         style={({ pressed }) => [styles.back, pressed && { opacity: 0.6 }]}>
-        <Ionicons name="chevron-back" size={24} color={theme.primary} />
+        <View style={[styles.backCircle, { backgroundColor: theme.primarySoft }]}>
+          <Ionicons name="chevron-back" size={22} color={theme.primary} />
+        </View>
       </Pressable>
       <AppText variant="title" style={styles.title} numberOfLines={2}>
         {title}
@@ -39,7 +41,8 @@ export function Header({ title, fallbackHref = '/', right }: HeaderProps) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  back: { width: MIN_TOUCH, height: MIN_TOUCH, alignItems: 'center', justifyContent: 'center', marginLeft: -spacing.sm },
+  back: { width: MIN_TOUCH, height: MIN_TOUCH, alignItems: 'center', justifyContent: 'center', marginLeft: -spacing.xs },
+  backCircle: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   title: { flex: 1 },
   right: { flexDirection: 'row', gap: spacing.sm },
 });

@@ -27,6 +27,11 @@ Une seule application pour le **web**, **Android** et **Windows**.
 
 ## Fonctionnalités
 
+### ✨ Une interface qui motive
+- Thème « Fraîcheur » : turquoise et vert, accent ambre pour les séries ; clair ou sombre.
+- **Aujourd'hui** s'ouvre sur une carte d'accueil : salutation, tâches faites sur prévues, série de concentration, habitudes et phrase du jour, jusqu'à « Journée bouclée ! 🏁 ».
+- Petites récompenses : coche qui rebondit (et vibre sur téléphone), couleur du domaine sur chaque tâche.
+
 ### 🎯 Objectifs et tâches
 - Objectifs par **domaine de vie** (santé, études, travail…), sur 4 horizons imbriqués.
 - **Progression calculée automatiquement** (sous-objectifs, tâches faites, indicateur chiffré) et alerte quand un objectif **prend du retard**.

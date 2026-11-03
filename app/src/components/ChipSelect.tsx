@@ -1,3 +1,4 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { MIN_TOUCH, radius, spacing } from '@/theme/colors';
@@ -32,7 +33,7 @@ export function ChipSelect<T extends string | number | null>({
   return (
     <View style={styles.container}>
       {label ? (
-        <AppText variant="small" color={theme.text}>
+        <AppText variant="small" color={theme.text} style={styles.label}>
           {label}
         </AppText>
       ) : null}
@@ -50,12 +51,13 @@ export function ChipSelect<T extends string | number | null>({
                 styles.chip,
                 {
                   borderColor: selected ? theme.primary : theme.border,
-                  backgroundColor: selected ? theme.primarySoft : theme.surface,
+                  backgroundColor: selected ? theme.primary : theme.surface,
                 },
                 pressed && { opacity: 0.7 },
               ]}>
               {option.color ? <DomainDot color={option.color} /> : null}
-              <AppText variant="small" color={selected ? theme.primary : theme.text}>
+              {selected ? <Ionicons name="checkmark" size={16} color={theme.onPrimary} /> : null}
+              <AppText variant="small" color={selected ? theme.onPrimary : theme.text} style={styles.label}>
                 {option.label}
               </AppText>
             </Pressable>
@@ -77,10 +79,11 @@ const styles = StyleSheet.create({
   chip: {
     minHeight: MIN_TOUCH,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.lg,
+    borderRadius: radius.pill,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
+  label: { fontWeight: '600' },
 });

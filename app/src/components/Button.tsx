@@ -1,6 +1,8 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 
 import { MIN_TOUCH, radius, spacing } from '@/theme/colors';
+import { fontFor } from '@/theme/fonts';
 import { useTheme } from '@/theme/useTheme';
 
 interface ButtonProps {
@@ -11,16 +13,18 @@ interface ButtonProps {
   disabled?: boolean;
 }
 
+/** Pill button; the primary one wears the brand gradient. */
 export function Button({ label, onPress, variant = 'primary', loading = false, disabled = false }: ButtonProps) {
   const theme = useTheme();
   const inactive = disabled || loading;
   const background = {
-    primary: theme.primary,
-    secondary: theme.surfaceAlt,
+    primary: 'transparent',
+    secondary: theme.primarySoft,
     ghost: 'transparent',
     danger: theme.danger,
   }[variant];
-  const foreground = variant === 'primary' || variant === 'danger' ? theme.onPrimary : theme.primary;
+  const foreground =
+    variant === 'primary' ? theme.onGradient : variant === 'danger' ? theme.onPrimary : theme.primary;
 
   return (
     <Pressable
@@ -31,12 +35,25 @@ export function Button({ label, onPress, variant = 'primary', loading = false, d
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
-        { backgroundColor: background, opacity: inactive ? 0.6 : pressed ? 0.85 : 1 },
+        variant === 'ghost' && styles.ghost,
+        {
+          backgroundColor: background,
+          opacity: inactive ? 0.55 : 1,
+          transform: [{ scale: pressed && !inactive ? 0.97 : 1 }],
+        },
       ]}>
+      {variant === 'primary' ? (
+        <LinearGradient
+          colors={[theme.gradientStart, theme.gradientEnd]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : null}
       {loading ? (
         <ActivityIndicator color={foreground} />
       ) : (
-        <Text style={[styles.label, { color: foreground }]}>{label}</Text>
+        <Text style={[styles.label, { color: foreground }, fontFor('700')]}>{label}</Text>
       )}
     </Pressable>
   );
@@ -46,10 +63,12 @@ const styles = StyleSheet.create({
   base: {
     minHeight: MIN_TOUCH,
     minWidth: MIN_TOUCH,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  label: { fontSize: 16, fontWeight: '600' },
+  ghost: { paddingHorizontal: spacing.sm },
+  label: { fontSize: 16, textAlign: 'center' },
 });

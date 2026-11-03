@@ -5,6 +5,7 @@ import { useSaveTask } from '@/api/tasks';
 import type { ISODate } from '@/api/types';
 import { fr } from '@/i18n/fr';
 import { MIN_TOUCH, radius, spacing } from '@/theme/colors';
+import { fontFor } from '@/theme/fonts';
 import { useTheme } from '@/theme/useTheme';
 
 import { AppText } from './AppText';
@@ -58,7 +59,8 @@ export function QuickAddTask({
           returnKeyType="done"
           style={[
             styles.input,
-            { color: theme.text, backgroundColor: theme.surface, borderColor: theme.border },
+            { color: theme.text, backgroundColor: theme.surfaceAlt, borderColor: theme.surfaceAlt },
+            fontFor(),
           ]}
         />
         {compact ? (
@@ -86,8 +88,8 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     minHeight: MIN_TOUCH,
-    borderWidth: 1,
-    borderRadius: radius.md,
+    borderWidth: 2,
+    borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     fontSize: 16,
   },

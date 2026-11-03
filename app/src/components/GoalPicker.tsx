@@ -60,7 +60,7 @@ export function GoalPicker({
 
   return (
     <View style={styles.container}>
-      <AppText variant="small" color={theme.text}>
+      <AppText variant="small" color={theme.text} style={styles.label}>
         {label}
       </AppText>
       <Pressable
@@ -69,7 +69,7 @@ export function GoalPicker({
         onPress={() => setOpen(true)}
         style={({ pressed }) => [
           styles.field,
-          { borderColor: errors.length ? theme.danger : theme.border, backgroundColor: theme.surface },
+          { borderColor: errors.length ? theme.danger : theme.surfaceAlt, backgroundColor: theme.surfaceAlt },
           pressed && { opacity: 0.7 },
         ]}>
         <AppText color={selected ? theme.text : theme.textMuted} numberOfLines={1} style={styles.flex}>
@@ -140,9 +140,10 @@ function Option({
 
 const styles = StyleSheet.create({
   container: { gap: spacing.xs },
+  label: { fontWeight: '600' },
   field: {
     minHeight: MIN_TOUCH,
-    borderWidth: 1,
+    borderWidth: 2,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     flexDirection: 'row',

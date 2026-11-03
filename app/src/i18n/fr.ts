@@ -495,6 +495,28 @@ export const fr = {
   },
   screens: {
     today: {
+      greeting: (hour: number, name: string) => {
+        const hello = hour < 5 ? 'Bonne nuit' : hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir';
+        return name ? `${hello}, ${name} 👋` : `${hello} 👋`;
+      },
+      tasksProgress: (done: number, total: number) => `${done} / ${total} tâche${total > 1 ? 's' : ''}`,
+      dayProgressLabel: (done: number, total: number) => `${done} tâches faites sur ${total} prévues aujourd’hui`,
+      nothingPlanned: 'Rien de prévu : ajoute ta première tâche !',
+      allDone: 'Journée bouclée ! 🏁',
+      streakPill: (days: number) => `🔥 ${days} jour${days > 1 ? 's' : ''}`,
+      habitsPill: (done: number, total: number) => `✓ ${done}/${total} habitude${total > 1 ? 's' : ''}`,
+      quotes: [
+        'Un marathon se court un pas après l’autre.',
+        'Fais aujourd’hui ce que ton futur toi te remerciera d’avoir fait.',
+        'La régularité bat l’intensité.',
+        'Petit progrès chaque jour, grands résultats chaque année.',
+        'Commence là où tu es. Utilise ce que tu as. Fais ce que tu peux.',
+        'Le meilleur moment pour avancer, c’est maintenant.',
+        'Chaque tâche cochée te rapproche de la ligne d’arrivée.',
+        'La motivation te lance, l’habitude te fait tenir.',
+        'Ne compte pas les jours, fais que les jours comptent.',
+        'Une heure de concentration vaut mieux qu’une journée dispersée.',
+      ],
       empty: 'Aucune tâche pour aujourd’hui. Profite de la course !',
       overdue: 'En retard',
       planned: 'Au programme',

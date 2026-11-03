@@ -1,4 +1,3 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -6,11 +5,12 @@ import { useCheckHabit } from '@/api/habits';
 import type { Habit } from '@/api/types';
 import { fr } from '@/i18n/fr';
 import { WEEKDAY_SHORT } from '@/lib/calendar';
-import { MIN_TOUCH, spacing } from '@/theme/colors';
+import { MIN_TOUCH, radius, spacing } from '@/theme/colors';
 import { useTheme } from '@/theme/useTheme';
 
 import { AppText } from './AppText';
 import { DomainDot } from './Badge';
+import { CheckMark } from './CheckMark';
 
 /** "Tous les jours", "Lun, Mer, Ven" or "1 fois / semaine (Sam, Dim)". */
 export function frequencyLabel(habit: Pick<Habit, 'frequency' | 'days'>): string {
@@ -45,10 +45,12 @@ export function HabitRow({ habit, hideGoal = false }: HabitRowProps) {
         accessibilityLabel={done ? fr.habit.markUndone(habit.title) : fr.habit.markDone(habit.title)}
         onPress={() => check.mutate({ id: habit.id, done: !done })}
         style={({ pressed }) => [styles.check, pressed && { opacity: 0.6 }]}>
-        <Ionicons
-          name={done ? 'checkbox' : 'square-outline'}
-          size={28}
-          color={done ? theme.success : theme.textMuted}
+        <CheckMark
+          checked={done}
+          checkedIcon="checkbox"
+          uncheckedIcon="square-outline"
+          checkedColor={theme.success}
+          uncheckedColor={theme.textMuted}
         />
       </Pressable>
       <Pressable
@@ -56,10 +58,16 @@ export function HabitRow({ habit, hideGoal = false }: HabitRowProps) {
         onPress={() => router.push({ pathname: '/habits/[id]', params: { id: String(habit.id) } })}
         style={({ pressed }) => [styles.body, pressed && { opacity: 0.7 }]}>
         <View style={styles.titleRow}>
-          <AppText style={styles.flex} numberOfLines={2}>
+          <AppText style={styles.title} numberOfLines={2}>
             {habit.title}
           </AppText>
-          {streak ? <AppText variant="small">{streak}</AppText> : null}
+          {streak ? (
+            <View style={[styles.streak, { backgroundColor: theme.accent }]}>
+              <AppText variant="small" color={theme.onAccent} style={styles.streakText}>
+                {streak}
+              </AppText>
+            </View>
+          ) : null}
         </View>
         <AppText variant="small">{frequencyLabel(habit)}</AppText>
         {hideGoal ? null : (
@@ -88,4 +96,7 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   goalRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   flex: { flex: 1 },
+  title: { flex: 1, fontWeight: '500' },
+  streak: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.pill },
+  streakText: { fontSize: 12, lineHeight: 16, fontWeight: '700' },
 });

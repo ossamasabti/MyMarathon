@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { MIN_TOUCH, radius, spacing } from '@/theme/colors';
+import { fontFor } from '@/theme/fonts';
 import { useTheme } from '@/theme/useTheme';
 
 import { AppText } from './AppText';
@@ -13,9 +15,10 @@ interface TextFieldProps extends Omit<TextInputProps, 'style'> {
 export function TextField({ label, errors = [], ...inputProps }: TextFieldProps) {
   const theme = useTheme();
   const hasError = errors.length > 0;
+  const [focused, setFocused] = useState(false);
   return (
     <View style={styles.container}>
-      <AppText variant="small" color={theme.text}>
+      <AppText variant="small" color={theme.text} style={styles.label}>
         {label}
       </AppText>
       <TextInput
@@ -27,11 +30,20 @@ export function TextField({ label, errors = [], ...inputProps }: TextFieldProps)
           inputProps.multiline && styles.multiline,
           {
             color: theme.text,
-            backgroundColor: theme.surface,
-            borderColor: hasError ? theme.danger : theme.border,
+            backgroundColor: theme.surfaceAlt,
+            borderColor: hasError ? theme.danger : focused ? theme.primary : theme.surfaceAlt,
           },
+          fontFor(),
         ]}
         {...inputProps}
+        onFocus={(event) => {
+          setFocused(true);
+          inputProps.onFocus?.(event);
+        }}
+        onBlur={(event) => {
+          setFocused(false);
+          inputProps.onBlur?.(event);
+        }}
       />
       {errors.map((message) => (
         <AppText key={message} variant="small" color={theme.danger} accessibilityLiveRegion="polite">
@@ -44,9 +56,10 @@ export function TextField({ label, errors = [], ...inputProps }: TextFieldProps)
 
 const styles = StyleSheet.create({
   container: { gap: spacing.xs },
+  label: { fontWeight: '600' },
   input: {
     minHeight: MIN_TOUCH,
-    borderWidth: 1,
+    borderWidth: 2,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     fontSize: 16,

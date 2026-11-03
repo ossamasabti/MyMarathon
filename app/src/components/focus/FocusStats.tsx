@@ -43,8 +43,9 @@ function StatsContent({ overview }: { overview: FocusOverview }) {
   return (
     <>
       <View style={styles.tiles}>
-        <StatTile label={fr.focus.currentStreak} value={fr.focus.days(overview.streak)} />
+        <StatTile icon="flame" highlight label={fr.focus.currentStreak} value={fr.focus.days(overview.streak)} />
         <StatTile
+          icon="sparkles"
           label={fr.focus.stats.qualityAvg}
           value={quality === null ? '—' : fr.focus.stats.qualityValue(quality.toFixed(1).replace('.', ','))}
         />

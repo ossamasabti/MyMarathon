@@ -16,7 +16,7 @@ import { TaskRow } from '@/components/TaskRow';
 import { fr } from '@/i18n/fr';
 import { dayLabel, dayLongLabel, startOfWeek, weekDays, weekLabel } from '@/lib/calendar';
 import { addDays, todayISO } from '@/lib/dates';
-import { radius, spacing } from '@/theme/colors';
+import { elevation, radius, spacing } from '@/theme/colors';
 import { useIsWide, useTheme } from '@/theme/useTheme';
 
 const ISO_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -146,9 +146,10 @@ function DayColumn({ day, tasks, wide, onMove, onShift }: DayColumnProps) {
         wide && { width: columnWidth },
         {
           backgroundColor: theme.surface,
-          borderColor: isToday ? theme.primary : theme.border,
-          borderWidth: isToday ? 2 : 1,
+          borderColor: isToday ? theme.primary : theme.surface,
+          borderWidth: 2,
         },
+        elevation(theme.shadow),
       ]}>
       <View style={styles.dayHeader}>
         <AppText variant="heading" color={isToday ? theme.primary : theme.text}>

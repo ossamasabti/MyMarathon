@@ -11,10 +11,12 @@ import { formatDate } from '@/lib/dates';
 import { formatDuration, formatSlot } from '@/lib/time';
 import { useFocusStore } from '@/stores/focusStore';
 import { MIN_TOUCH, spacing } from '@/theme/colors';
+import { useDomainColor } from '@/theme/domainColors';
 import { useTheme } from '@/theme/useTheme';
 
 import { AppText } from './AppText';
 import { DomainDot } from './Badge';
+import { CheckMark } from './CheckMark';
 
 interface TaskRowProps {
   task: Task;
@@ -27,6 +29,7 @@ interface TaskRowProps {
 /** A task with its checkbox and, underneath, the goal it serves. */
 export function TaskRow({ task, hideGoal = false, footer }: TaskRowProps) {
   const theme = useTheme();
+  const display = useDomainColor();
   const toggle = useToggleTask();
   const done = task.status === 'done';
   const directGoal = task.goal_path[task.goal_path.length - 1];
@@ -43,17 +46,24 @@ export function TaskRow({ task, hideGoal = false, footer }: TaskRowProps) {
   };
 
   return (
-    <View style={[styles.row, { borderBottomColor: theme.border }]}>
+    <View
+      style={[
+        styles.row,
+        // Colored edge = the task's domain (the goal path below names it).
+        { borderBottomColor: theme.border, borderLeftColor: task.domain ? display(task.domain.color) : 'transparent' },
+      ]}>
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: done }}
         accessibilityLabel={done ? fr.task.markTodo(task.title) : fr.task.markDone(task.title)}
         onPress={() => toggle.mutate({ id: task.id, done: !done })}
         style={({ pressed }) => [styles.check, pressed && { opacity: 0.6 }]}>
-        <Ionicons
-          name={done ? 'checkmark-circle' : 'ellipse-outline'}
-          size={28}
-          color={done ? theme.success : theme.textMuted}
+        <CheckMark
+          checked={done}
+          checkedIcon="checkmark-circle"
+          uncheckedIcon="ellipse-outline"
+          checkedColor={theme.success}
+          uncheckedColor={theme.textMuted}
         />
       </Pressable>
 
@@ -122,11 +132,13 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingVertical: spacing.xs,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    borderLeftWidth: 3,
+    paddingLeft: spacing.xs,
   },
   check: { width: MIN_TOUCH, height: MIN_TOUCH, alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, minHeight: MIN_TOUCH, justifyContent: 'center', paddingVertical: spacing.xs, gap: 2 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  title: { flex: 1 },
+  title: { flex: 1, fontWeight: '500' },
   slot: { fontWeight: '600', fontVariant: ['tabular-nums'] },
   goalRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   goalText: { flex: 1 },

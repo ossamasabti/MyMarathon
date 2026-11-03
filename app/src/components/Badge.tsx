@@ -11,7 +11,7 @@ import { AppText } from './AppText';
 export function Badge({ label, color }: { label: string; color?: string }) {
   const theme = useTheme();
   return (
-    <View style={[styles.badge, { borderColor: color ?? theme.border, backgroundColor: theme.surfaceAlt }]}>
+    <View style={[styles.badge, { borderColor: color ?? theme.primarySoft, backgroundColor: theme.primarySoft }]}>
       <AppText variant="small" color={theme.text} style={styles.text}>
         {label}
       </AppText>
@@ -33,8 +33,8 @@ const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     borderWidth: 1,
   },
-  text: { fontSize: 12, lineHeight: 16 },
+  text: { fontSize: 12, lineHeight: 16, fontWeight: '600' },
 });

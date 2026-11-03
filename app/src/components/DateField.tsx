@@ -81,7 +81,7 @@ export function DateField({ label, value, onChange, shortcuts = [], clearable = 
               onPress={() => onChange(chip.value)}
               style={({ pressed }) => [
                 styles.chip,
-                { borderColor: theme.border, backgroundColor: theme.surfaceAlt },
+                { borderColor: theme.primarySoft, backgroundColor: theme.primarySoft },
                 pressed && { opacity: 0.7 },
               ]}>
               <AppText variant="small" color={theme.primary}>
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   chip: {
     minHeight: 44,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.lg,
+    borderRadius: radius.pill,
     borderWidth: 1,
     justifyContent: 'center',
   },

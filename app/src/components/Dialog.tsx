@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 
 import { fr } from '@/i18n/fr';
-import { radius, spacing } from '@/theme/colors';
+import { elevation, radius, spacing } from '@/theme/colors';
 import { useTheme } from '@/theme/useTheme';
 
 import { AppText } from './AppText';
@@ -24,7 +24,7 @@ export function Dialog({ visible, title, onClose, children }: DialogProps) {
         {/* Stop presses inside the card from closing the dialog. */}
         <Pressable
           onPress={() => {}}
-          style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}
+          style={[styles.card, { backgroundColor: theme.surface }, elevation(theme.shadow, 2)]}
           accessibilityViewIsModal>
           <AppText variant="heading">{title}</AppText>
           {children}
@@ -70,8 +70,7 @@ const styles = StyleSheet.create({
     maxHeight: '85%',
     padding: spacing.lg,
     gap: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: 1,
+    borderRadius: radius.lg + 4,
   },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm, flexWrap: 'wrap' },
 });

@@ -74,19 +74,19 @@ def offline_page() -> str:
     return f"""<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><title>{APP_NAME}</title>
 <style>
-  :root {{ --bg:#F7F8FA; --surface:#FFFFFF; --text:#14181F; --muted:#525B68; --border:#D5DAE1; --primary:#1F5FD1; --on-primary:#FFFFFF; }}
+  :root {{ --bg:#F3FBF9; --surface:#FFFFFF; --text:#10231F; --muted:#4A5F5A; --g1:#0D766C; --g2:#15803D; --on-g:#FFFFFF; }}
   @media (prefers-color-scheme: dark) {{
-    :root {{ --bg:#0E1116; --surface:#171B22; --text:#EEF1F5; --muted:#A5AEBB; --border:#343C48; --primary:#7FAAF5; --on-primary:#0B1A33; }}
+    :root {{ --bg:#0B1715; --surface:#13221F; --text:#E8F5F2; --muted:#9DB5AF; --g1:#0E7C71; --g2:#15803D; --on-g:#FFFFFF; }}
   }}
   body {{ margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
          background:var(--bg); color:var(--text); font-family:"Segoe UI",system-ui,sans-serif; }}
   .card {{ max-width:420px; margin:16px; padding:32px; text-align:center; background:var(--surface);
-          border:1px solid var(--border); border-radius:16px; }}
+          border-radius:24px; box-shadow:0 8px 24px rgba(13,59,53,.12); }}
   img {{ width:72px; height:72px; border-radius:16px; }}
   h1 {{ font-size:22px; margin:16px 0 8px; }}
   p {{ color:var(--muted); line-height:1.5; margin:0 0 20px; }}
-  button {{ min-height:44px; padding:0 24px; border:0; border-radius:10px; font-size:16px; font-weight:600;
-           background:var(--primary); color:var(--on-primary); cursor:pointer; }}
+  button {{ min-height:44px; padding:0 28px; border:0; border-radius:999px; font-size:16px; font-weight:700;
+           background:linear-gradient(135deg,var(--g1),var(--g2)); color:var(--on-g); cursor:pointer; }}
   button:disabled {{ opacity:.6; cursor:default; }}
   #status {{ min-height:1.5em; margin:16px 0 0; font-size:14px; }}
 </style></head>
