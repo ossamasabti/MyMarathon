@@ -13,7 +13,13 @@ import {
   scheduleReviewReminder,
   syncDeadlineReminders,
 } from '@/lib/notifications';
-import { planDeadlineReminders, REMINDER_WINDOW_DAYS } from '@/lib/reminders';
+import {
+  limitReminders,
+  planDeadlineReminders,
+  planUpcomingTaskReminders,
+  REMINDER_WINDOW_DAYS,
+  UPCOMING_WINDOW_DAYS,
+} from '@/lib/reminders';
 import { usePrefsStore } from '@/stores/prefsStore';
 
 /**
@@ -28,11 +34,14 @@ export function NotificationsSync() {
 function NativeNotificationsSync() {
   const notifyDeadlines = usePrefsStore((s) => s.notifyDeadlines);
   const notifyReview = usePrefsStore((s) => s.notifyReview);
+  const notifyUpcoming = usePrefsStore((s) => s.notifyUpcoming);
+  const leadMinutes = usePrefsStore((s) => s.upcomingLeadMinutes);
   const [foregroundTick, setForegroundTick] = useState(0);
 
   const today = todayISO();
   const tasks = useTasks({ due_after: today, due_before: addDays(today, REMINDER_WINDOW_DAYS) });
   const goals = useGoals({ status: 'active' });
+  const planned = useTasks({ planned_after: today, planned_before: addDays(today, UPCOMING_WINDOW_DAYS) });
 
   useEffect(() => {
     configureNotifications();
@@ -52,14 +61,19 @@ function NativeNotificationsSync() {
       const granted = (await getPermission()) === 'granted';
       if (cancelled) return;
       await scheduleReviewReminder(granted && notifyReview);
-      if (!tasks.data || !goals.data) return;
-      const planned = granted && notifyDeadlines ? planDeadlineReminders(tasks.data, goals.data) : [];
-      await syncDeadlineReminders(planned);
+      if (!tasks.data || !goals.data || !planned.data) return;
+      const reminders = granted
+        ? limitReminders([
+            ...(notifyDeadlines ? planDeadlineReminders(tasks.data, goals.data) : []),
+            ...(notifyUpcoming ? planUpcomingTaskReminders(planned.data, leadMinutes) : []),
+          ])
+        : [];
+      await syncDeadlineReminders(reminders);
     })().catch(() => undefined);
     return () => {
       cancelled = true;
     };
-  }, [notifyDeadlines, notifyReview, tasks.data, goals.data, foregroundTick]);
+  }, [notifyDeadlines, notifyReview, notifyUpcoming, leadMinutes, tasks.data, goals.data, planned.data, foregroundTick]);
 
   return null;
 }

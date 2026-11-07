@@ -60,7 +60,7 @@ Une seule application pour le **web**, **Android** et **Windows**.
 
 ### 📊 Statistiques et rappels
 - Progression par domaine, tâches terminées par semaine, objectifs en retard.
-- Rappels d'échéance et de revue sur le téléphone.
+- Rappels sur le téléphone : échéances, revue, programme du jour à 8 h et alerte avant chaque tâche qui a un horaire.
 - Thème clair / sombre, interface entièrement en français.
 
 ## Utiliser l'application
@@ -145,7 +145,7 @@ cd app && npx tsc --noEmit && npx expo lint
 - Objectif quotidien modifiable (2 h par défaut) depuis la carte « Concentration du jour » ou les Réglages.
 
 ## Rappels (notifications locales)
-Dans **Réglages → Rappels** (application mobile uniquement) : à 9 h le jour d'échéance d'une tâche, 3 jours avant la fin d'un objectif actif, et revue le dimanche à 18 h. Recalculés à chaque ouverture de l'app ; inexistants sur le web.
+Dans **Réglages → Rappels** (application mobile uniquement) : à 9 h le jour d'échéance d'une tâche, 3 jours avant la fin d'un objectif actif, revue le dimanche à 18 h, et (« Rappels des tâches à venir ») le programme du jour à 8 h plus une alerte 5 min à 1 h avant chaque tâche planifiée avec un horaire. Recalculés à chaque ouverture de l'app ; inexistants sur le web.
 
 ## APK Android (EAS)
 Le profil `preview` (`app/eas.json`) produit un APK connecté au site en ligne `https://ossamasabti.pythonanywhere.com` (Wi-Fi ou 4G) :

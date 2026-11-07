@@ -147,6 +147,11 @@ export const fr = {
     forGoal: (goal: string) => `Pour ton objectif « ${goal} »`,
     goalEnding: (title: string) => `Plus que 3 jours : ${title}`,
     goalEndingBody: (percent: number) => `Tu en es à ${percent} % du parcours. Dernière ligne droite !`,
+    slotSoon: (minutes: number, title: string) =>
+      minutes >= 60 ? `Dans ${minutes / 60} h : ${title}` : `Dans ${minutes} min : ${title}`,
+    dayPlan: (count: number) => `Au programme aujourd’hui : ${count} tâche${count > 1 ? 's' : ''}`,
+    dayPlanBody: (titles: string[]) =>
+      titles.length > 3 ? `${titles.slice(0, 3).join(' · ')} et ${titles.length - 3} autre${titles.length > 4 ? 's' : ''}` : titles.join(' · '),
   },
   progress: {
     distance: (percent: number) => `${percent} % du parcours`,
@@ -600,6 +605,10 @@ export const fr = {
       notificationsWebOnly: 'Les rappels sont disponibles dans l’application mobile (Android et iOS).',
       deadlineReminders: 'Rappels d’échéance',
       deadlineRemindersHint: 'À 9 h le jour d’une échéance, et 3 jours avant la fin d’un objectif.',
+      upcomingReminders: 'Rappels des tâches à venir',
+      upcomingRemindersHint: 'À 8 h, le programme de la journée ; puis une alerte avant chaque tâche qui a un horaire.',
+      leadTime: 'Me prévenir avant le début',
+      leadMinutes: (minutes: number) => (minutes >= 60 ? `${minutes / 60} h` : `${minutes} min`),
       reviewReminder: 'Rappel de revue',
       reviewReminderHint: 'Le dimanche à 18 h, pour ta revue de la semaine.',
       permissionDenied:

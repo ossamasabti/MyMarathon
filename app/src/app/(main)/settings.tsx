@@ -13,6 +13,7 @@ import { ErrorState, LoadingState } from '@/components/States';
 import { TextField } from '@/components/TextField';
 import { fr } from '@/i18n/fr';
 import { notificationsSupported, requestPermission } from '@/lib/notifications';
+import { LEAD_MINUTES_CHOICES } from '@/lib/reminders';
 import { formatDuration } from '@/lib/time';
 import { usePrefsStore, type ThemePreference } from '@/stores/prefsStore';
 import { MIN_TOUCH, spacing } from '@/theme/colors';
@@ -133,6 +134,10 @@ function NotificationsSection() {
   const notifyReview = usePrefsStore((s) => s.notifyReview);
   const setNotifyDeadlines = usePrefsStore((s) => s.setNotifyDeadlines);
   const setNotifyReview = usePrefsStore((s) => s.setNotifyReview);
+  const notifyUpcoming = usePrefsStore((s) => s.notifyUpcoming);
+  const setNotifyUpcoming = usePrefsStore((s) => s.setNotifyUpcoming);
+  const leadMinutes = usePrefsStore((s) => s.upcomingLeadMinutes);
+  const setLeadMinutes = usePrefsStore((s) => s.setUpcomingLeadMinutes);
   const [denied, setDenied] = useState(false);
 
   if (!notificationsSupported) {
@@ -162,6 +167,20 @@ function NotificationsSection() {
         value={notifyDeadlines}
         onChange={toggle(setNotifyDeadlines)}
       />
+      <ToggleRow
+        label={fr.screens.settings.upcomingReminders}
+        hint={fr.screens.settings.upcomingRemindersHint}
+        value={notifyUpcoming}
+        onChange={toggle(setNotifyUpcoming)}
+      />
+      {notifyUpcoming ? (
+        <ChipSelect<number>
+          label={fr.screens.settings.leadTime}
+          options={LEAD_MINUTES_CHOICES.map((m) => ({ value: m, label: fr.screens.settings.leadMinutes(m) }))}
+          value={leadMinutes}
+          onChange={setLeadMinutes}
+        />
+      ) : null}
       <ToggleRow
         label={fr.screens.settings.reviewReminder}
         hint={fr.screens.settings.reviewReminderHint}
